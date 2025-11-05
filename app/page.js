@@ -1,8 +1,9 @@
-import SignOutButton from "./components/SignOutButton";
+import { ThemeChange } from "@/components/ThemeChange";
+import SignOutButton from "../components/SignOutButton";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
+    <main className="flex min-h-screen flex-col items-center justify-center p-24 gap-5">
       <h1 className="text-4xl font-bold mb-8">Course Manager</h1>
       <p className="text-xl">Setup Complete! 🎉</p>
       <a
@@ -12,6 +13,7 @@ export default function Home() {
       >
         Test Database Connection
       </a>
+      <ThemeChange />
       <SignOutButton />
     </main>
   );
