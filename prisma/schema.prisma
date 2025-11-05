@@ -1,0 +1,294 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// USER & AUTH
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      UserRole @default(STUDENT)
+  studentId String?  @unique // University student ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  enrollments     Enrollment[]
+  notes           Note[]
+  uploads         Upload[]
+  chatMessages    ChatMessage[]
+  forumPosts      ForumPost[]
+  forumComments   ForumComment[]
+  groupMemberships GroupMembership[]
+  quizAttempts    QuizAttempt[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+// ============================================
+// COURSE MANAGEMENT (FR-1, FR-2, FR-3)
+// ============================================
+
+model Course {
+  id          String   @id @default(uuid())
+  code        String   @unique // e.g., "CSE215"
+  title       String
+  semester    String   // e.g., "Fall 2024"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  sections Section[]
+
+  @@map("courses")
+}
+
+model Section {
+  id       String  @id @default(uuid())
+  courseId String
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  sectionNumber String  // e.g., "1", "2"
+  roomNumber    String?
+  
+  // Class timings
+  classSchedule Json? // [{day: "Sunday", startTime: "10:00", endTime: "11:30"}]
+  
+  // Exam schedules
+  midtermDate   DateTime?
+  midtermTime   String?
+  finalDate     DateTime?
+  finalTime     String?
+  
+  // Faculty info
+  facultyName   String?
+  facultyEmail  String?
+  consultationHours Json? // [{day: "Monday", time: "2:00 PM - 4:00 PM"}]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  enrollments    Enrollment[]
+  assignments    Assignment[]
+  resources      Resource[]
+  chatChannelId  String?      @unique
+  chatChannel    ChatChannel?
+  forumPosts     ForumPost[]
+  projectGroups  ProjectGroup[]
+
+  @@unique([courseId, sectionNumber])
+  @@map("sections")
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, sectionId])
+  @@map("enrollments")
+}
+
+model Assignment {
+  id          String    @id @default(uuid())
+  sectionId   String
+  section     Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  dueDate     DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("assignments")
+}
+
+model Resource {
+  id        String   @id @default(uuid())
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title     String
+  type      String   // "link", "document", "video"
+  url       String
+  createdAt DateTime @default(now())
+
+  @@map("resources")
+}
+
+// ============================================
+// NOTES MANAGEMENT (FR-4, FR-5, FR-6, FR-7)
+// ============================================
+
+model Note {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title     String
+  content   Json     // Rich text editor content (Tiptap/Lexical JSON)
+  tags      String[] // Custom tags for categorization
+  
+  courseCode String? // Optional link to course
+  topic      String? // For topic-based categorization
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  uploads Upload[] // Supplementary materials
+
+  @@map("notes")
+}
+
+model Upload {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  noteId    String?
+  note      Note?    @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  
+  fileName  String
+  fileUrl   String   // Supabase Storage URL
+  fileType  String   // "pdf", "image", "document"
+  fileSize  Int      // in bytes
+  
+  createdAt DateTime @default(now())
+
+  @@map("uploads")
+}
+
+// ============================================
+// AI QUIZ (FR-8, FR-9)
+// ============================================
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  noteId    String   // Quiz generated from this note
+  score     Int
+  totalQuestions Int
+  
+  createdAt DateTime @default(now())
+
+  @@map("quiz_attempts")
+}
+
+// ============================================
+// COMMUNITY CHAT (FR-12, FR-14, FR-15)
+// ============================================
+
+model ChatChannel {
+  id        String   @id @default(uuid())
+  sectionId String   @unique
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  messages ChatMessage[]
+
+  @@map("chat_channels")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  channelId String
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  content   String
+  imageUrl  String?  // Photo in chat
+  
+  createdAt DateTime @default(now())
+
+  @@map("chat_messages")
+}
+
+model ProjectGroup {
+  id        String   @id @default(uuid())
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  
+  name      String
+  createdAt DateTime @default(now())
+
+  // Relations
+  members GroupMembership[]
+
+  @@map("project_groups")
+}
+
+model GroupMembership {
+  id      String       @id @default(uuid())
+  groupId String
+  group   ProjectGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  userId  String
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_memberships")
+}
+
+// ============================================
+// FORUM (FR-16, FR-17, FR-18, FR-19)
+// ============================================
+
+model ForumPost {
+  id        String   @id @default(uuid())
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  title     String
+  content   String
+  isResolved Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  comments ForumComment[]
+
+  @@map("forum_posts")
+}
+
+model ForumComment {
+  id       String    @id @default(uuid())
+  postId   String
+  post     ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  authorId String
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  content  String
+  
+  createdAt DateTime @default(now())
+
+  @@map("forum_comments")
+}
