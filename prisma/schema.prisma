@@ -9,27 +9,34 @@ datasource db {
 }
 
 // ============================================
-// USER & AUTH
+// CORE ENTITIES
 // ============================================
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @db.Uuid
   email     String   @unique
-  name      String
-  role      UserRole @default(STUDENT)
+  name      String?
+  role      UserRole? @default(STUDENT)
   studentId String?  @unique // University student ID
+  
+  departmentId String?  @db.Uuid
+  department   Department? @relation(fields: [departmentId], references: [id])
+  
+  isFinalYear Boolean? @default(false) // For FR-20
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  enrollments     Enrollment[]
-  notes           Note[]
-  uploads         Upload[]
-  chatMessages    ChatMessage[]
-  forumPosts      ForumPost[]
-  forumComments   ForumComment[]
+  enrollments      Enrollment[]
+  notes            Note[]
+  uploads          Upload[]
+  chatMessages     ChatMessage[]
+  forumPosts       ForumPost[]
+  forumComments    ForumComment[]
   groupMemberships GroupMembership[]
-  quizAttempts    QuizAttempt[]
+  quizAttempts     QuizAttempt[]
+  calendarEvents   CalendarEvent[]
 
   @@map("users")
 }
@@ -39,46 +46,96 @@ enum UserRole {
   ADMIN
 }
 
-// ============================================
-// COURSE MANAGEMENT (FR-1, FR-2, FR-3)
-// ============================================
-
-model Course {
-  id          String   @id @default(uuid())
-  code        String   @unique // e.g., "CSE215"
-  title       String
-  semester    String   // e.g., "Fall 2024"
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Department {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code      String   @unique // e.g., "CSE", "EEE", "BBA"
+  name      String   // e.g., "Computer Science & Engineering"
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  sections Section[]
+  users   User[]
+  courses Course[]
+
+  @@map("departments")
+}
+
+model Semester {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   // e.g., "Fall 2024", "Spring 2025"
+  season    String   // "Fall", "Spring", "Summer"
+  year      Int      // 2024, 2025
+  
+  startDate DateTime
+  endDate   DateTime
+  
+  isActive  Boolean  @default(false) // Only one active semester at a time
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  coursesOffered CourseOffered[]
+
+  @@unique([season, year])
+  @@map("semesters")
+}
+
+model Course {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique // e.g., "CSE215"
+  title       String   // e.g., "Data Structures"
+  credits     Int      @default(3)
+  description String?
+  
+  departmentId String  @db.Uuid
+  department   Department @relation(fields: [departmentId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  coursesOffered CourseOffered[]
+  notes          Note[]
+  forumPosts     ForumPost[]
 
   @@map("courses")
 }
 
-model Section {
-  id       String  @id @default(uuid())
-  courseId String
-  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+// ============================================
+// COURSE OFFERINGS & ENROLLMENT (FR-1, FR-2)
+// ============================================
+
+model CourseOffered {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId   String   @db.Uuid
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   
-  sectionNumber String  // e.g., "1", "2"
+  semesterId String   @db.Uuid
+  semester   Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  
+  section    String   // e.g., "1", "2", "A", "B"
+  
+  // Class Details (FR-2)
   roomNumber    String?
+  classSchedule Json?   // [{day: "Sunday", startTime: "10:00", endTime: "11:30"}]
   
-  // Class timings
-  classSchedule Json? // [{day: "Sunday", startTime: "10:00", endTime: "11:30"}]
-  
-  // Exam schedules
+  // Exam Schedules (FR-2)
   midtermDate   DateTime?
   midtermTime   String?
+  midtermRoom   String?
   finalDate     DateTime?
   finalTime     String?
+  finalRoom     String?
   
-  // Faculty info
-  facultyName   String?
-  facultyEmail  String?
-  consultationHours Json? // [{day: "Monday", time: "2:00 PM - 4:00 PM"}]
+  // Faculty Information (FR-2, FR-13)
+  facultyName         String?
+  facultyEmail        String?
+  facultyOfficeRoom   String?
+  consultationHours   Json?    // [{day: "Monday", time: "2:00 PM - 4:00 PM"}]
+  
+  maxStudents Int?     // Capacity
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -87,50 +144,91 @@ model Section {
   enrollments    Enrollment[]
   assignments    Assignment[]
   resources      Resource[]
-  chatChannelId  String?      @unique
+  quizzes        Quiz[]
   chatChannel    ChatChannel?
-  forumPosts     ForumPost[]
   projectGroups  ProjectGroup[]
 
-  @@unique([courseId, sectionNumber])
-  @@map("sections")
+  @@unique([courseId, semesterId, section])
+  @@index([semesterId])
+  @@index([courseId])
+  @@map("courses_offered")
 }
 
 model Enrollment {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sectionId String
-  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String        @db.Uuid
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  courseOfferedId String        @db.Uuid
+  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  
+  enrolledAt DateTime @default(now())
 
-  @@unique([userId, sectionId])
+  @@unique([userId, courseOfferedId])
+  @@index([userId])
+  @@index([courseOfferedId])
   @@map("enrollments")
 }
 
+// ============================================
+// COURSE CONTENT (FR-3)
+// ============================================
+
 model Assignment {
-  id          String    @id @default(uuid())
-  sectionId   String
-  section     Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferedId String        @db.Uuid
+  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  
   title       String
   description String?
   dueDate     DateTime
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  totalMarks  Int?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@index([courseOfferedId])
   @@map("assignments")
 }
 
+model Quiz {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferedId String        @db.Uuid
+  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  dueDate     DateTime?
+  duration    Int?     // in minutes
+  totalMarks  Int?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseOfferedId])
+  @@map("quizzes")
+}
+
 model Resource {
-  id        String   @id @default(uuid())
-  sectionId String
-  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferedId String        @db.Uuid
+  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  
   title     String
-  type      String   // "link", "document", "video"
+  type      ResourceType // "LINK", "DOCUMENT", "VIDEO"
   url       String
+  
   createdAt DateTime @default(now())
 
+  @@index([courseOfferedId])
   @@map("resources")
+}
+
+enum ResourceType {
+  LINK
+  DOCUMENT
+  VIDEO
+  OTHER
 }
 
 // ============================================
@@ -138,32 +236,46 @@ model Resource {
 // ============================================
 
 model Note {
-  id        String   @id @default(uuid())
-  userId    String
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  courseId  String?  @db.Uuid
+  course    Course?  @relation(fields: [courseId], references: [id])
   
   title     String
   content   Json     // Rich text editor content (Tiptap/Lexical JSON)
-  tags      String[] // Custom tags for categorization
   
-  courseCode String? // Optional link to course
-  topic      String? // For topic-based categorization
+  // Categorization (FR-7)
+  topic     String?
+  tags      String[] // Custom tags
+  
+  // Note type (FR-4)
+  noteType  NoteType @default(DIGITAL)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  uploads Upload[] // Supplementary materials
+  uploads      Upload[]
+  quizAttempts QuizAttempt[]
 
+  @@index([userId])
+  @@index([courseId])
   @@map("notes")
 }
 
+enum NoteType {
+  DIGITAL   // Created in app
+  SCANNED   // Uploaded PDF/image
+}
+
 model Upload {
-  id        String   @id @default(uuid())
-  userId    String
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  noteId    String?
+  noteId    String?  @db.Uuid
   note      Note?    @relation(fields: [noteId], references: [id], onDelete: Cascade)
   
   fileName  String
@@ -173,6 +285,8 @@ model Upload {
   
   createdAt DateTime @default(now())
 
+  @@index([userId])
+  @@index([noteId])
   @@map("uploads")
 }
 
@@ -181,17 +295,64 @@ model Upload {
 // ============================================
 
 model QuizAttempt {
-  id        String   @id @default(uuid())
-  userId    String
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  noteId    String   // Quiz generated from this note
-  score     Int
+  noteId    String   @db.Uuid
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  
+  score          Int
   totalQuestions Int
   
   createdAt DateTime @default(now())
 
+  @@index([userId])
+  @@index([noteId])
   @@map("quiz_attempts")
+}
+
+// ============================================
+// CALENDAR (FR-10, FR-11)
+// ============================================
+
+model CalendarEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  eventType   EventType
+  
+  startTime   DateTime
+  endTime     DateTime?
+  location    String?
+  
+  // Reminders (FR-10)
+  reminderTime DateTime?
+  
+  // Auto-imported from course (FR-11)
+  isImported      Boolean @default(false)
+  courseOfferedId String? @db.Uuid
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("calendar_events")
+}
+
+enum EventType {
+  CLASS
+  EXAM
+  MIDTERM
+  FINAL
+  ASSIGNMENT
+  QUIZ
+  CONSULTATION
+  MEETING
+  OTHER
 }
 
 // ============================================
@@ -199,9 +360,9 @@ model QuizAttempt {
 // ============================================
 
 model ChatChannel {
-  id        String   @id @default(uuid())
-  sectionId String   @unique
-  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferedId String        @unique @db.Uuid
+  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
   
   createdAt DateTime @default(now())
 
@@ -212,44 +373,53 @@ model ChatChannel {
 }
 
 model ChatMessage {
-  id        String   @id @default(uuid())
-  channelId String
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId String      @db.Uuid
   channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
   
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String      @db.Uuid
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   content   String
   imageUrl  String?  // Photo in chat
   
   createdAt DateTime @default(now())
 
+  @@index([channelId])
+  @@index([userId])
   @@map("chat_messages")
 }
 
 model ProjectGroup {
-  id        String   @id @default(uuid())
-  sectionId String
-  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferedId String        @db.Uuid
+  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
   
-  name      String
+  name        String
+  description String?
+  
   createdAt DateTime @default(now())
 
   // Relations
   members GroupMembership[]
 
+  @@index([courseOfferedId])
   @@map("project_groups")
 }
 
 model GroupMembership {
-  id      String       @id @default(uuid())
-  groupId String
-  group   ProjectGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId   String       @db.Uuid
+  group     ProjectGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   
-  userId  String
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String       @db.Uuid
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  role      String?      // "leader", "member"
 
   @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
   @@map("group_memberships")
 }
 
@@ -258,16 +428,16 @@ model GroupMembership {
 // ============================================
 
 model ForumPost {
-  id        String   @id @default(uuid())
-  sectionId String
-  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId String  @db.Uuid
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String  @db.Uuid
+  author   User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
   
-  title     String
-  content   String
-  isResolved Boolean @default(false)
+  title      String
+  content    String
+  isResolved Boolean @default(false) // FR-18
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -275,20 +445,25 @@ model ForumPost {
   // Relations
   comments ForumComment[]
 
+  @@index([courseId])
+  @@index([authorId])
+  @@index([isResolved]) // For FR-19 (filtering resolved posts)
   @@map("forum_posts")
 }
 
 model ForumComment {
-  id       String    @id @default(uuid())
-  postId   String
-  post     ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId String    @db.Uuid
+  post   ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   
-  authorId String
-  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String  @db.Uuid
+  author   User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
   
-  content  String
+  content String
   
   createdAt DateTime @default(now())
 
+  @@index([postId])
+  @@index([authorId])
   @@map("forum_comments")
 }

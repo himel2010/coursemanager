@@ -1,114 +1,142 @@
-"use client";
+"use client"
+import CourseInput from "@/components/CourseInput"
+import { Button } from "@/components/ui/button"
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useState } from "react"
 
-import { useState } from "react";
-import { useAuth } from "@/lib/auth/AuthContext";
-import { useRouter } from "next/navigation";
+export default function Signup() {
+  const [courseNum, setCourseNum] = useState(0)
+  const [courses, setCourses] = useState([])
 
-export default function SignUpPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
-  const router = useRouter();
-
-  async function handleSignUp(e) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const { data, error } = await signUp(email, password);
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-
-    // Create user profile in your database
-    await fetch("/api/auth/create-profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: data.user.id,
-        email: data.user.email,
-        name,
-      }),
-    });
-
-    setLoading(false);
-    router.push("/dashboard");
+  const addCourse = () => {
+    setCourses((prev) => [
+      ...prev,
+      {
+        code: "",
+        section: "",
+      },
+    ])
+  }
+  const onCourseChange = (idx, updatedCourse) => {
+    setCourses((prev) => {
+      const newCourses = [...prev]
+      newCourses[idx] = updatedCourse
+      return newCourses
+    })
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md space-y-8 p-8">
-        <div>
-          <h2 className="text-3xl font-bold text-center">Sign Up</h2>
-        </div>
+    <div className="w-full min-h-screen flex justify-center items-center p-4">
+      <form className="w-full max-w-2xl">
+        <FieldSet>
+          <FieldLegend>Profile</FieldLegend>
+          <FieldDescription>Fill in your profile information.</FieldDescription>
+          <FieldSeparator />
 
-        <form onSubmit={handleSignUp} className="space-y-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium">
-              Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-            />
-          </div>
+          <FieldGroup>
+            {/* Name Field */}
+            <Field orientation="responsive">
+              <FieldContent>
+                <FieldLabel htmlFor="name">Name</FieldLabel>
+              </FieldContent>
+              <Input id="name" placeholder="Catto" required />
+            </Field>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-            />
-          </div>
+            {/* Student ID Field */}
+            <Field orientation="responsive">
+              <FieldContent>
+                <FieldLabel htmlFor="sid">Student ID</FieldLabel>
+              </FieldContent>
+              <Input id="sid" placeholder="111" required />
+            </Field>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-            />
-          </div>
+            {/* Department Field */}
+            <Field orientation="responsive">
+              <FieldContent>
+                <FieldLabel htmlFor="dept">Department</FieldLabel>
+              </FieldContent>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CSE">CSE</SelectItem>
+                  <SelectItem value="CS">CS</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
 
-          {error && <div className="text-red-600 text-sm">{error}</div>}
+            {/* Semester Field */}
+            <Field orientation="responsive">
+              <FieldContent>
+                <FieldLabel htmlFor="semester">Current Semester</FieldLabel>
+              </FieldContent>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fall2025">FALL 2025</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white rounded-md py-2 px-4 hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? "Signing up..." : "Sign Up"}
-          </button>
+            <FieldSeparator />
 
-          <p className="text-center text-sm">
-            Already have an account?{" "}
-            <a href="/login" className="text-blue-600 hover:underline">
-              Log in
-            </a>
-          </p>
-        </form>
-      </div>
+            {/* Courses Field */}
+            <Field orientation="responsive">
+              <FieldContent>
+                <FieldLabel htmlFor="courses">Courses</FieldLabel>
+                <FieldDescription>
+                  What are your courses for this semester?
+                </FieldDescription>
+                {courses.map((key, idx) => (
+                  <div key={idx}>
+                    <CourseInput
+                      course={key}
+                      idx={idx}
+                      onCourseChange={onCourseChange}
+                    />
+                  </div>
+                ))}
+                <Button onClick={addCourse} type="button">
+                  Add Course
+                </Button>
+              </FieldContent>
+            </Field>
+
+            <FieldSeparator />
+
+            {/* Buttons */}
+            <Field orientation="responsive">
+              <div className="flex gap-2">
+                <Button type="submit">Submit</Button>
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
+              </div>
+            </Field>
+          </FieldGroup>
+        </FieldSet>
+      </form>
+      <Button onClick={() => console.log(courses)}>Log Courses</Button>
     </div>
-  );
+  )
 }

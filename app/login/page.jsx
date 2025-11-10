@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   return (
-    <div className="w-screen h-screen flex flex-col justify-center items-center">
-      <h1 className="font-bold text-2xl mb-10">Login / Signup</h1>
+    <div className=" w-screen h-screen flex flex-col justify-center items-center">
+      <h1 className="font-sans text-2xl mb-10">Login / Signup</h1>
       <form className="w-[25%]">
         <FieldSet>
           <FieldGroup>
@@ -37,6 +37,7 @@ export default function LoginPage() {
                 type="password"
                 placeholder="••••••••"
                 required
+                className={"font-mono"}
               />
             </Field>
           </FieldGroup>

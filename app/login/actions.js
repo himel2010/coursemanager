@@ -18,6 +18,7 @@ export async function login(formData) {
   const { error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
+    console.log("keno hobe bbhai");
     redirect("/error");
   }
 
@@ -34,13 +35,15 @@ export async function signup(formData) {
     email: formData.get("email"),
     password: formData.get("password"),
   };
-
+  console.log(data);
   const { error } = await supabase.auth.signUp(data);
 
   if (error) {
+    console.log(error);
+
     redirect("/error");
   }
 
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect("/signup");
 }
