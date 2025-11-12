@@ -1,19 +1,46 @@
 // app/api/user/[id]/route.js
 import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma" // Your Prisma client
+import { prisma } from "@/lib/prisma"
 
 export async function GET(request, { params }) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
+        studentId: true,
         name: true,
         email: true,
         role: true,
-        // Add other fields you need
+        isFinalYear: true,
+        department: {
+          select: {
+            code: true,
+            name: true,
+          },
+        },
+        enrollments: {
+          where: {
+            courseOffered: {
+              semester: {
+                isActive: true,
+              },
+            },
+          },
+          include: {
+            courseOffered: {
+              include: {
+                course: true,
+                semester: true,
+                theoryFaculty: true,
+                labFaculty1: true,
+                labFaculty2: true,
+              },
+            },
+          },
+        },
       },
     })
 

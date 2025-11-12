@@ -1,5 +1,8 @@
+"use client"
 import { ThemeChange } from "@/components/ThemeChange"
 import SignOutButton from "../components/SignOutButton"
+import { Button } from "@/components/ui/button"
+import { redirect } from "next/navigation"
 
 export default function Home() {
   return (
@@ -14,6 +17,13 @@ export default function Home() {
         Test Database Connection
       </a>
       <ThemeChange />
+      <Button
+        onClick={() => {
+          redirect("/user-dashboard")
+        }}
+      >
+        Go to User Dashboard
+      </Button>
       <SignOutButton />
     </main>
   )
