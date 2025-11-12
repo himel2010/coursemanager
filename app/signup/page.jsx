@@ -19,12 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import axios from "axios"
+import { redirect } from "next/navigation"
 import { useState } from "react"
 
 export default function Signup() {
   const [courseNum, setCourseNum] = useState(0)
   const [courses, setCourses] = useState([])
-
+  const [semester, setSemester] = useState("FALL 2025")
+  const [name, setName] = useState("")
+  const [id, setId] = useState("")
+  const [dept, setDept] = useState("CSE")
   const addCourse = () => {
     setCourses((prev) => [
       ...prev,
@@ -42,6 +47,23 @@ export default function Signup() {
     })
   }
 
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const data = {
+      name: name,
+      id: id,
+      dept: dept,
+      sem: semester,
+      course: courses,
+    }
+    try {
+      const response = await axios.post("/api/set-user", data)
+      if (response) redirect("/")
+    } catch (error) {
+      throw error
+    }
+  }
+
   return (
     <div className="w-full min-h-screen flex justify-center items-center p-4">
       <form className="w-full max-w-2xl">
@@ -56,7 +78,13 @@ export default function Signup() {
               <FieldContent>
                 <FieldLabel htmlFor="name">Name</FieldLabel>
               </FieldContent>
-              <Input id="name" placeholder="Catto" required />
+              <Input
+                id="name"
+                placeholder="Catto"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
             </Field>
 
             {/* Student ID Field */}
@@ -64,7 +92,13 @@ export default function Signup() {
               <FieldContent>
                 <FieldLabel htmlFor="sid">Student ID</FieldLabel>
               </FieldContent>
-              <Input id="sid" placeholder="111" required />
+              <Input
+                id="sid"
+                placeholder="111"
+                required
+                value={id}
+                onChange={(e) => setId(e.target.value)}
+              />
             </Field>
 
             {/* Department Field */}
@@ -127,7 +161,9 @@ export default function Signup() {
             {/* Buttons */}
             <Field orientation="responsive">
               <div className="flex gap-2">
-                <Button type="submit">Submit</Button>
+                <Button type="submit" onClick={handleSubmit}>
+                  Submit
+                </Button>
                 <Button type="button" variant="outline">
                   Cancel
                 </Button>

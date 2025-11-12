@@ -6,222 +6,766 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["auth", "public"]
 }
-
-// ============================================
-// CORE ENTITIES
-// ============================================
 
 model User {
-  id        String   @id @db.Uuid
-  email     String   @unique
-  name      String?
-  role      UserRole? @default(STUDENT)
-  studentId String?  @unique // University student ID
-  
-  departmentId String?  @db.Uuid
-  department   Department? @relation(fields: [departmentId], references: [id])
-  
-  isFinalYear Boolean? @default(false) // For FR-20
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  enrollments      Enrollment[]
-  notes            Note[]
-  uploads          Upload[]
-  chatMessages     ChatMessage[]
-  forumPosts       ForumPost[]
-  forumComments    ForumComment[]
-  groupMemberships GroupMembership[]
-  quizAttempts     QuizAttempt[]
+  id               String            @id @db.Uuid
+  email            String            @unique
+  name             String?
+  role             UserRole?         @default(STUDENT)
+  studentId        String?           @unique
+  departmentId     String?           @db.Uuid
+  isFinalYear      Boolean?          @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime?         @updatedAt
   calendarEvents   CalendarEvent[]
+  chatMessages     ChatMessage[]
+  enrollments      Enrollment[]
+  forumComments    ForumComment[]
+  forumPosts       ForumPost[]
+  groupMemberships GroupMembership[]
+  notes            Note[]
+  quizAttempts     QuizAttempt[]
+  uploads          Upload[]
+  department       Department?       @relation(fields: [departmentId], references: [id])
+  users            users             @relation(fields: [id], references: [id], onDelete: Cascade)
 
   @@map("users")
+  @@schema("public")
 }
 
-enum UserRole {
-  STUDENT
-  ADMIN
+model Faculty {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  initial  String  @unique
+  name     String?
+  email    String?
+  designation String?
+  room     String?
+
+  // Back-relations with unique names
+  theoryCourses  CourseOffered[] @relation("TheoryFaculty")
+  lab1Courses    CourseOffered[] @relation("LabFaculty1")
+  lab2Courses    CourseOffered[] @relation("LabFaculty2")
+
+  @@schema("public")
 }
+
 
 model Department {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code      String   @unique // e.g., "CSE", "EEE", "BBA"
-  name      String   // e.g., "Computer Science & Engineering"
-  
+  code      String   @unique
+  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  users   User[]
-  courses Course[]
+  courses   Course[]
+  users     User[]
 
   @@map("departments")
+  @@schema("public")
 }
 
 model Semester {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String   // e.g., "Fall 2024", "Spring 2025"
-  season    String   // "Fall", "Spring", "Summer"
-  year      Int      // 2024, 2025
-  
-  startDate DateTime
-  endDate   DateTime
-  
-  isActive  Boolean  @default(false) // Only one active semester at a time
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  season         String
+  year           Int
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   coursesOffered CourseOffered[]
 
   @@unique([season, year])
   @@map("semesters")
+  @@schema("public")
 }
 
 model Course {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code        String   @unique // e.g., "CSE215"
-  title       String   // e.g., "Data Structures"
-  credits     Int      @default(3)
-  description String?
-  
-  departmentId String  @db.Uuid
-  department   Department @relation(fields: [departmentId], references: [id])
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code           String          @unique
+  title          String
+  credits        Int             @default(3)
+  description    String?
+  departmentId   String          @db.Uuid
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  department     Department      @relation(fields: [departmentId], references: [id])
   coursesOffered CourseOffered[]
-  notes          Note[]
   forumPosts     ForumPost[]
+  notes          Note[]
 
   @@map("courses")
+  @@schema("public")
 }
 
-// ============================================
-// COURSE OFFERINGS & ENROLLMENT (FR-1, FR-2)
-// ============================================
-
 model CourseOffered {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  courseId   String   @db.Uuid
-  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  semesterId String   @db.Uuid
-  semester   Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
-  
-  section    String   // e.g., "1", "2", "A", "B"
-  
-  // Class Details (FR-2)
-  roomNumber    String?
-  classSchedule Json?   // [{day: "Sunday", startTime: "10:00", endTime: "11:30"}]
-  
-  // Exam Schedules (FR-2)
-  midtermDate   DateTime?
-  midtermTime   String?
-  midtermRoom   String?
-  finalDate     DateTime?
-  finalTime     String?
-  finalRoom     String?
-  
-  // Faculty Information (FR-2, FR-13)
-  facultyName         String?
-  facultyEmail        String?
-  facultyOfficeRoom   String?
-  consultationHours   Json?    // [{day: "Monday", time: "2:00 PM - 4:00 PM"}]
-  
-  maxStudents Int?     // Capacity
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId          String         @db.Uuid
+  semesterId        String         @db.Uuid
+  section           String
+  roomNumber        String?
+  classSchedule     Json?
+  midtermDate       DateTime?
+  midtermTime       String?
+  midtermRoom       String?
+  finalDate         DateTime?
+  finalTime         String?
+  finalRoom         String?
+ // Faculty references
+  theoryFacultyId   String?        @db.Uuid
+  labFaculty1Id     String?        @db.Uuid
+  labFaculty2Id     String?        @db.Uuid
+  theoryFaculty     Faculty?       @relation("TheoryFaculty", fields: [theoryFacultyId], references: [id])
+  labFaculty1       Faculty?       @relation("LabFaculty1", fields: [labFaculty1Id], references: [id])
+  labFaculty2       Faculty?       @relation("LabFaculty2", fields: [labFaculty2Id], references: [id])
 
-  // Relations
-  enrollments    Enrollment[]
-  assignments    Assignment[]
-  resources      Resource[]
-  quizzes        Quiz[]
-  chatChannel    ChatChannel?
-  projectGroups  ProjectGroup[]
+
+  consultationHours Json?
+  maxStudents       Int?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  assignments       Assignment[]
+  chatChannel       ChatChannel?
+  course            Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  semester          Semester       @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  enrollments       Enrollment[]
+  projectGroups     ProjectGroup[]
+  quizzes           Quiz[]
+  resources         Resource[]
 
   @@unique([courseId, semesterId, section])
   @@index([semesterId])
   @@index([courseId])
   @@map("courses_offered")
+  @@schema("public")
 }
 
 model Enrollment {
   id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId          String        @db.Uuid
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
   courseOfferedId String        @db.Uuid
+  enrolledAt      DateTime      @default(now())
   courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
-  
-  enrolledAt DateTime @default(now())
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseOfferedId])
   @@index([userId])
   @@index([courseOfferedId])
   @@map("enrollments")
+  @@schema("public")
 }
-
-// ============================================
-// COURSE CONTENT (FR-3)
-// ============================================
 
 model Assignment {
   id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   courseOfferedId String        @db.Uuid
+  title           String
+  description     String?
+  dueDate         DateTime
+  totalMarks      Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
-  
-  title       String
-  description String?
-  dueDate     DateTime
-  totalMarks  Int?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@index([courseOfferedId])
   @@map("assignments")
+  @@schema("public")
 }
 
 model Quiz {
   id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   courseOfferedId String        @db.Uuid
+  title           String
+  description     String?
+  dueDate         DateTime?
+  duration        Int?
+  totalMarks      Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
-  
-  title       String
-  description String?
-  dueDate     DateTime?
-  duration    Int?     // in minutes
-  totalMarks  Int?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@index([courseOfferedId])
   @@map("quizzes")
+  @@schema("public")
 }
 
 model Resource {
   id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   courseOfferedId String        @db.Uuid
+  title           String
+  type            ResourceType
+  url             String
+  createdAt       DateTime      @default(now())
   courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
-  
-  title     String
-  type      ResourceType // "LINK", "DOCUMENT", "VIDEO"
-  url       String
-  
-  createdAt DateTime @default(now())
 
   @@index([courseOfferedId])
   @@map("resources")
+  @@schema("public")
+}
+
+model Note {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String        @db.Uuid
+  courseId     String?       @db.Uuid
+  title        String
+  content      Json
+  topic        String?
+  tags         String[]
+  noteType     NoteType      @default(DIGITAL)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  course       Course?       @relation(fields: [courseId], references: [id])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizAttempts QuizAttempt[]
+  uploads      Upload[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("notes")
+  @@schema("public")
+}
+
+model Upload {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  noteId    String?  @db.Uuid
+  fileName  String
+  fileUrl   String
+  fileType  String
+  fileSize  Int
+  createdAt DateTime @default(now())
+  note      Note?    @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([noteId])
+  @@map("uploads")
+  @@schema("public")
+}
+
+model QuizAttempt {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @db.Uuid
+  noteId         String   @db.Uuid
+  score          Int
+  totalQuestions Int
+  createdAt      DateTime @default(now())
+  note           Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([noteId])
+  @@map("quiz_attempts")
+  @@schema("public")
+}
+
+model CalendarEvent {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String    @db.Uuid
+  title           String
+  description     String?
+  eventType       EventType
+  startTime       DateTime
+  endTime         DateTime?
+  location        String?
+  reminderTime    DateTime?
+  isImported      Boolean   @default(false)
+  courseOfferedId String?   @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("calendar_events")
+  @@schema("public")
+}
+
+model ChatChannel {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferedId String        @unique @db.Uuid
+  createdAt       DateTime      @default(now())
+  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  messages        ChatMessage[]
+
+  @@map("chat_channels")
+  @@schema("public")
+}
+
+model ChatMessage {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId String      @db.Uuid
+  userId    String      @db.Uuid
+  content   String
+  imageUrl  String?
+  createdAt DateTime    @default(now())
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@index([userId])
+  @@map("chat_messages")
+  @@schema("public")
+}
+
+model ProjectGroup {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferedId String            @db.Uuid
+  name            String
+  description     String?
+  createdAt       DateTime          @default(now())
+  members         GroupMembership[]
+  courseOffered   CourseOffered     @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+
+  @@index([courseOfferedId])
+  @@map("project_groups")
+  @@schema("public")
+}
+
+model GroupMembership {
+  id      String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId String       @db.Uuid
+  userId  String       @db.Uuid
+  role    String?
+  group   ProjectGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_memberships")
+  @@schema("public")
+}
+
+model ForumPost {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId   String         @db.Uuid
+  authorId   String         @db.Uuid
+  title      String
+  content    String
+  isResolved Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  comments   ForumComment[]
+  author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  course     Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([authorId])
+  @@index([isResolved])
+  @@map("forum_posts")
+  @@schema("public")
+}
+
+model ForumComment {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String    @db.Uuid
+  authorId  String    @db.Uuid
+  content   String
+  createdAt DateTime  @default(now())
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([authorId])
+  @@map("forum_comments")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model audit_log_entries {
+  instance_id String?   @db.Uuid
+  id          String    @id @db.Uuid
+  payload     Json?     @db.Json
+  created_at  DateTime? @db.Timestamptz(6)
+  ip_address  String    @default("") @db.VarChar(64)
+
+  @@index([instance_id], map: "audit_logs_instance_id_idx")
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model flow_state {
+  id                     String                @id @db.Uuid
+  user_id                String?               @db.Uuid
+  auth_code              String
+  code_challenge_method  code_challenge_method
+  code_challenge         String
+  provider_type          String
+  provider_access_token  String?
+  provider_refresh_token String?
+  created_at             DateTime?             @db.Timestamptz(6)
+  updated_at             DateTime?             @db.Timestamptz(6)
+  authentication_method  String
+  auth_code_issued_at    DateTime?             @db.Timestamptz(6)
+  saml_relay_states      saml_relay_states[]
+
+  @@index([created_at(sort: Desc)])
+  @@index([auth_code], map: "idx_auth_code")
+  @@index([user_id, authentication_method], map: "idx_user_id_auth_method")
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model identities {
+  provider_id     String
+  user_id         String    @db.Uuid
+  identity_data   Json
+  provider        String
+  last_sign_in_at DateTime? @db.Timestamptz(6)
+  created_at      DateTime? @db.Timestamptz(6)
+  updated_at      DateTime? @db.Timestamptz(6)
+  email           String?   @default(dbgenerated("lower((identity_data ->> 'email'::text))"))
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  users           users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([provider_id, provider], map: "identities_provider_id_provider_unique")
+  @@index([email])
+  @@index([user_id])
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model instances {
+  id              String    @id @db.Uuid
+  uuid            String?   @db.Uuid
+  raw_base_config String?
+  created_at      DateTime? @db.Timestamptz(6)
+  updated_at      DateTime? @db.Timestamptz(6)
+
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mfa_amr_claims {
+  session_id            String   @db.Uuid
+  created_at            DateTime @db.Timestamptz(6)
+  updated_at            DateTime @db.Timestamptz(6)
+  authentication_method String
+  id                    String   @id(map: "amr_id_pk") @db.Uuid
+  sessions              sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([session_id, authentication_method], map: "mfa_amr_claims_session_id_authentication_method_pkey")
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mfa_challenges {
+  id                     String      @id @db.Uuid
+  factor_id              String      @db.Uuid
+  created_at             DateTime    @db.Timestamptz(6)
+  verified_at            DateTime?   @db.Timestamptz(6)
+  ip_address             String      @db.Inet
+  otp_code               String?
+  web_authn_session_data Json?
+  mfa_factors            mfa_factors @relation(fields: [factor_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "mfa_challenges_auth_factor_id_fkey")
+
+  @@index([created_at(sort: Desc)], map: "mfa_challenge_created_at_idx")
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mfa_factors {
+  id                           String           @id @db.Uuid
+  user_id                      String           @db.Uuid
+  friendly_name                String?
+  factor_type                  factor_type
+  status                       factor_status
+  created_at                   DateTime         @db.Timestamptz(6)
+  updated_at                   DateTime         @db.Timestamptz(6)
+  secret                       String?
+  phone                        String?
+  last_challenged_at           DateTime?        @unique @db.Timestamptz(6)
+  web_authn_credential         Json?
+  web_authn_aaguid             String?          @db.Uuid
+  last_webauthn_challenge_data Json?
+  mfa_challenges               mfa_challenges[]
+  users                        users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, phone], map: "unique_phone_factor_per_user")
+  @@index([user_id, created_at], map: "factor_id_created_at_idx")
+  @@index([user_id])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model oauth_authorizations {
+  id                    String                     @id @db.Uuid
+  authorization_id      String                     @unique
+  client_id             String                     @db.Uuid
+  user_id               String?                    @db.Uuid
+  redirect_uri          String
+  scope                 String
+  state                 String?
+  resource              String?
+  code_challenge        String?
+  code_challenge_method code_challenge_method?
+  response_type         oauth_response_type        @default(code)
+  status                oauth_authorization_status @default(pending)
+  authorization_code    String?                    @unique
+  created_at            DateTime                   @default(now()) @db.Timestamptz(6)
+  expires_at            DateTime                   @default(dbgenerated("(now() + '00:03:00'::interval)")) @db.Timestamptz(6)
+  approved_at           DateTime?                  @db.Timestamptz(6)
+  oauth_clients         oauth_clients              @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                 users?                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model oauth_clients {
+  id                   String                  @id @db.Uuid
+  client_secret_hash   String?
+  registration_type    oauth_registration_type
+  redirect_uris        String
+  grant_types          String
+  client_name          String?
+  client_uri           String?
+  logo_uri             String?
+  created_at           DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                @default(now()) @db.Timestamptz(6)
+  deleted_at           DateTime?               @db.Timestamptz(6)
+  client_type          oauth_client_type       @default(confidential)
+  oauth_authorizations oauth_authorizations[]
+  oauth_consents       oauth_consents[]
+  sessions             sessions[]
+
+  @@index([deleted_at])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model oauth_consents {
+  id            String        @id @db.Uuid
+  user_id       String        @db.Uuid
+  client_id     String        @db.Uuid
+  scopes        String
+  granted_at    DateTime      @default(now()) @db.Timestamptz(6)
+  revoked_at    DateTime?     @db.Timestamptz(6)
+  oauth_clients oauth_clients @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, client_id], map: "oauth_consents_user_client_unique")
+  @@index([user_id, granted_at(sort: Desc)], map: "oauth_consents_user_order_idx")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model one_time_tokens {
+  id         String              @id @db.Uuid
+  user_id    String              @db.Uuid
+  token_type one_time_token_type
+  token_hash String
+  relates_to String
+  created_at DateTime            @default(now()) @db.Timestamp(6)
+  updated_at DateTime            @default(now()) @db.Timestamp(6)
+  users      users               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, token_type])
+  @@index([relates_to], map: "one_time_tokens_relates_to_hash_idx", type: Hash)
+  @@index([token_hash], map: "one_time_tokens_token_hash_hash_idx", type: Hash)
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model refresh_tokens {
+  instance_id String?   @db.Uuid
+  id          BigInt    @id @default(autoincrement())
+  token       String?   @unique(map: "refresh_tokens_token_unique") @db.VarChar(255)
+  user_id     String?   @db.VarChar(255)
+  revoked     Boolean?
+  created_at  DateTime? @db.Timestamptz(6)
+  updated_at  DateTime? @db.Timestamptz(6)
+  parent      String?   @db.VarChar(255)
+  session_id  String?   @db.Uuid
+  sessions    sessions? @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([instance_id])
+  @@index([instance_id, user_id])
+  @@index([parent])
+  @@index([session_id, revoked])
+  @@index([updated_at(sort: Desc)])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model saml_providers {
+  id                String        @id @db.Uuid
+  sso_provider_id   String        @db.Uuid
+  entity_id         String        @unique
+  metadata_xml      String
+  metadata_url      String?
+  attribute_mapping Json?
+  created_at        DateTime?     @db.Timestamptz(6)
+  updated_at        DateTime?     @db.Timestamptz(6)
+  name_id_format    String?
+  sso_providers     sso_providers @relation(fields: [sso_provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([sso_provider_id])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model saml_relay_states {
+  id              String        @id @db.Uuid
+  sso_provider_id String        @db.Uuid
+  request_id      String
+  for_email       String?
+  redirect_to     String?
+  created_at      DateTime?     @db.Timestamptz(6)
+  updated_at      DateTime?     @db.Timestamptz(6)
+  flow_state_id   String?       @db.Uuid
+  flow_state      flow_state?   @relation(fields: [flow_state_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sso_providers   sso_providers @relation(fields: [sso_provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)])
+  @@index([for_email])
+  @@index([sso_provider_id])
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model schema_migrations {
+  version String @id @db.VarChar(255)
+
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sessions {
+  id                     String           @id @db.Uuid
+  user_id                String           @db.Uuid
+  created_at             DateTime?        @db.Timestamptz(6)
+  updated_at             DateTime?        @db.Timestamptz(6)
+  factor_id              String?          @db.Uuid
+  aal                    aal_level?
+  not_after              DateTime?        @db.Timestamptz(6)
+  refreshed_at           DateTime?        @db.Timestamp(6)
+  user_agent             String?
+  ip                     String?          @db.Inet
+  tag                    String?
+  oauth_client_id        String?          @db.Uuid
+  refresh_token_hmac_key String?
+  refresh_token_counter  BigInt?
+  mfa_amr_claims         mfa_amr_claims[]
+  refresh_tokens         refresh_tokens[]
+  oauth_clients          oauth_clients?   @relation(fields: [oauth_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([not_after(sort: Desc)])
+  @@index([oauth_client_id])
+  @@index([user_id])
+  @@index([user_id, created_at], map: "user_id_created_at_idx")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model sso_domains {
+  id              String        @id @db.Uuid
+  sso_provider_id String        @db.Uuid
+  domain          String
+  created_at      DateTime?     @db.Timestamptz(6)
+  updated_at      DateTime?     @db.Timestamptz(6)
+  sso_providers   sso_providers @relation(fields: [sso_provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([sso_provider_id])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model sso_providers {
+  id                String              @id @db.Uuid
+  resource_id       String?
+  created_at        DateTime?           @db.Timestamptz(6)
+  updated_at        DateTime?           @db.Timestamptz(6)
+  disabled          Boolean?
+  saml_providers    saml_providers[]
+  saml_relay_states saml_relay_states[]
+  sso_domains       sso_domains[]
+
+  @@index([resource_id], map: "sso_providers_resource_id_pattern_idx")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model users {
+  instance_id                 String?                @db.Uuid
+  id                          String                 @id @db.Uuid
+  aud                         String?                @db.VarChar(255)
+  role                        String?                @db.VarChar(255)
+  email                       String?                @db.VarChar(255)
+  encrypted_password          String?                @db.VarChar(255)
+  email_confirmed_at          DateTime?              @db.Timestamptz(6)
+  invited_at                  DateTime?              @db.Timestamptz(6)
+  confirmation_token          String?                @db.VarChar(255)
+  confirmation_sent_at        DateTime?              @db.Timestamptz(6)
+  recovery_token              String?                @db.VarChar(255)
+  recovery_sent_at            DateTime?              @db.Timestamptz(6)
+  email_change_token_new      String?                @db.VarChar(255)
+  email_change                String?                @db.VarChar(255)
+  email_change_sent_at        DateTime?              @db.Timestamptz(6)
+  last_sign_in_at             DateTime?              @db.Timestamptz(6)
+  raw_app_meta_data           Json?
+  raw_user_meta_data          Json?
+  is_super_admin              Boolean?
+  created_at                  DateTime?              @db.Timestamptz(6)
+  updated_at                  DateTime?              @db.Timestamptz(6)
+  phone                       String?                @unique
+  phone_confirmed_at          DateTime?              @db.Timestamptz(6)
+  phone_change                String?                @default("")
+  phone_change_token          String?                @default("") @db.VarChar(255)
+  phone_change_sent_at        DateTime?              @db.Timestamptz(6)
+  confirmed_at                DateTime?              @default(dbgenerated("LEAST(email_confirmed_at, phone_confirmed_at)")) @db.Timestamptz(6)
+  email_change_token_current  String?                @default("") @db.VarChar(255)
+  email_change_confirm_status Int?                   @default(0) @db.SmallInt
+  banned_until                DateTime?              @db.Timestamptz(6)
+  reauthentication_token      String?                @default("") @db.VarChar(255)
+  reauthentication_sent_at    DateTime?              @db.Timestamptz(6)
+  is_sso_user                 Boolean                @default(false)
+  deleted_at                  DateTime?              @db.Timestamptz(6)
+  is_anonymous                Boolean                @default(false)
+  identities                  identities[]
+  mfa_factors                 mfa_factors[]
+  oauth_authorizations        oauth_authorizations[]
+  oauth_consents              oauth_consents[]
+  one_time_tokens             one_time_tokens[]
+  sessions                    sessions[]
+  users                       User?
+
+  @@index([instance_id])
+  @@index([is_anonymous])
+  @@schema("auth")
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+
+  @@schema("public")
 }
 
 enum ResourceType {
@@ -229,118 +773,15 @@ enum ResourceType {
   DOCUMENT
   VIDEO
   OTHER
-}
 
-// ============================================
-// NOTES MANAGEMENT (FR-4, FR-5, FR-6, FR-7)
-// ============================================
-
-model Note {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  courseId  String?  @db.Uuid
-  course    Course?  @relation(fields: [courseId], references: [id])
-  
-  title     String
-  content   Json     // Rich text editor content (Tiptap/Lexical JSON)
-  
-  // Categorization (FR-7)
-  topic     String?
-  tags      String[] // Custom tags
-  
-  // Note type (FR-4)
-  noteType  NoteType @default(DIGITAL)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  uploads      Upload[]
-  quizAttempts QuizAttempt[]
-
-  @@index([userId])
-  @@index([courseId])
-  @@map("notes")
+  @@schema("public")
 }
 
 enum NoteType {
-  DIGITAL   // Created in app
-  SCANNED   // Uploaded PDF/image
-}
+  DIGITAL
+  SCANNED
 
-model Upload {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  noteId    String?  @db.Uuid
-  note      Note?    @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  
-  fileName  String
-  fileUrl   String   // Supabase Storage URL
-  fileType  String   // "pdf", "image", "document"
-  fileSize  Int      // in bytes
-  
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([noteId])
-  @@map("uploads")
-}
-
-// ============================================
-// AI QUIZ (FR-8, FR-9)
-// ============================================
-
-model QuizAttempt {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  noteId    String   @db.Uuid
-  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  
-  score          Int
-  totalQuestions Int
-  
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([noteId])
-  @@map("quiz_attempts")
-}
-
-// ============================================
-// CALENDAR (FR-10, FR-11)
-// ============================================
-
-model CalendarEvent {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  title       String
-  description String?
-  eventType   EventType
-  
-  startTime   DateTime
-  endTime     DateTime?
-  location    String?
-  
-  // Reminders (FR-10)
-  reminderTime DateTime?
-  
-  // Auto-imported from course (FR-11)
-  isImported      Boolean @default(false)
-  courseOfferedId String? @db.Uuid
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@map("calendar_events")
+  @@schema("public")
 }
 
 enum EventType {
@@ -353,117 +794,76 @@ enum EventType {
   CONSULTATION
   MEETING
   OTHER
+
+  @@schema("public")
 }
 
-// ============================================
-// COMMUNITY CHAT (FR-12, FR-14, FR-15)
-// ============================================
+enum aal_level {
+  aal1
+  aal2
+  aal3
 
-model ChatChannel {
-  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  courseOfferedId String        @unique @db.Uuid
-  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
-
-  // Relations
-  messages ChatMessage[]
-
-  @@map("chat_channels")
+  @@schema("auth")
 }
 
-model ChatMessage {
-  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  channelId String      @db.Uuid
-  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  
-  userId    String      @db.Uuid
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  content   String
-  imageUrl  String?  // Photo in chat
-  
-  createdAt DateTime @default(now())
+enum code_challenge_method {
+  s256
+  plain
 
-  @@index([channelId])
-  @@index([userId])
-  @@map("chat_messages")
+  @@schema("auth")
 }
 
-model ProjectGroup {
-  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  courseOfferedId String        @db.Uuid
-  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
-  
-  name        String
-  description String?
-  
-  createdAt DateTime @default(now())
+enum factor_status {
+  unverified
+  verified
 
-  // Relations
-  members GroupMembership[]
-
-  @@index([courseOfferedId])
-  @@map("project_groups")
+  @@schema("auth")
 }
 
-model GroupMembership {
-  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  groupId   String       @db.Uuid
-  group     ProjectGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  
-  userId    String       @db.Uuid
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  role      String?      // "leader", "member"
+enum factor_type {
+  totp
+  webauthn
+  phone
 
-  @@unique([groupId, userId])
-  @@index([groupId])
-  @@index([userId])
-  @@map("group_memberships")
+  @@schema("auth")
 }
 
-// ============================================
-// FORUM (FR-16, FR-17, FR-18, FR-19)
-// ============================================
+enum oauth_authorization_status {
+  pending
+  approved
+  denied
+  expired
 
-model ForumPost {
-  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  courseId String  @db.Uuid
-  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  authorId String  @db.Uuid
-  author   User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
-  title      String
-  content    String
-  isResolved Boolean @default(false) // FR-18
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  comments ForumComment[]
-
-  @@index([courseId])
-  @@index([authorId])
-  @@index([isResolved]) // For FR-19 (filtering resolved posts)
-  @@map("forum_posts")
+  @@schema("auth")
 }
 
-model ForumComment {
-  id     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  postId String    @db.Uuid
-  post   ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  authorId String  @db.Uuid
-  author   User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
-  content String
-  
-  createdAt DateTime @default(now())
+enum oauth_client_type {
+  public
+  confidential
 
-  @@index([postId])
-  @@index([authorId])
-  @@map("forum_comments")
+  @@schema("auth")
+}
+
+enum oauth_registration_type {
+  dynamic
+  manual
+
+  @@schema("auth")
+}
+
+enum oauth_response_type {
+  code
+
+  @@schema("auth")
+}
+
+enum one_time_token_type {
+  confirmation_token
+  reauthentication_token
+  recovery_token
+  email_change_token_new
+  email_change_token_current
+  phone_change_token
+
+  @@schema("auth")
 }

@@ -1,5 +1,5 @@
-import { ThemeChange } from "@/components/ThemeChange";
-import SignOutButton from "../components/SignOutButton";
+import { ThemeChange } from "@/components/ThemeChange"
+import SignOutButton from "../components/SignOutButton"
 
 export default function Home() {
   return (
@@ -16,5 +16,5 @@ export default function Home() {
       <ThemeChange />
       <SignOutButton />
     </main>
-  );
+  )
 }
