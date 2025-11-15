@@ -252,5 +252,58 @@ async function main() {
   }
 }
 
-main()
+async function createChat() {
+  console.log("Starting seed: Creating chat channels for courses offered...")
+
+  // Get all courses offered
+  const coursesOffered = await prisma.courseOffered.findMany({
+    include: {
+      course: true,
+      semester: true,
+      chatChannel: true, // Include existing chat channels to check
+    },
+  })
+
+  console.log(`Found ${coursesOffered.length} courses offered`)
+
+  let created = 0
+  let skipped = 0
+
+  // Create chat channel for each course offered (if it doesn't exist)
+  for (const courseOffered of coursesOffered) {
+    // Skip if chat channel already exists
+    if (courseOffered.chatChannel) {
+      console.log(
+        `Skipping ${courseOffered.course.code} - ${courseOffered.section} (channel already exists)`
+      )
+      skipped++
+      continue
+    }
+
+    try {
+      await prisma.chatChannel.create({
+        data: {
+          courseOfferedId: courseOffered.id,
+        },
+      })
+
+      console.log(
+        `✓ Created chat channel for ${courseOffered.course.code} - ${courseOffered.section} (${courseOffered.semester.season} ${courseOffered.semester.year})`
+      )
+      created++
+    } catch (error) {
+      console.error(
+        `✗ Failed to create chat channel for ${courseOffered.course.code} - ${courseOffered.section}:`,
+        error
+      )
+    }
+  }
+
+  console.log("\n=== Seed Complete ===")
+  console.log(`Chat channels created: ${created}`)
+  console.log(`Skipped (already exist): ${skipped}`)
+  console.log(`Total courses offered: ${coursesOffered.length}`)
+}
+// main()
 // getFaculties()
+createChat()

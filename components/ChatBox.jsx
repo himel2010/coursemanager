@@ -6,8 +6,10 @@ import { Button } from "./ui/button"
 import { SendHorizonal } from "lucide-react"
 import usePartySocket from "partysocket/react"
 import { createClient } from "@/lib/supabase/client"
+import ChatNameDisplay from "./ChatNameDisplay"
+import { ScrollArea } from "./ui/scroll-area"
 
-const ChatBox = ({ userProfile, activeCourseID }) => {
+const ChatBox = ({ userProfile, activeCourseID, messageCache }) => {
   const supabase = createClient()
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState([])
@@ -16,41 +18,53 @@ const ChatBox = ({ userProfile, activeCourseID }) => {
 
   useEffect(() => {
     const loadMessages = async () => {
-      setIsLoading(true)
-      try {
-        const { data: messagesData, error } = await supabase
-          .from("chat_messages")
-          .select(
-            `
-    *,
-    user:users!inner (
-      id,
-      name
-    ),
-            chat_channels!inner (
-              course_offered_id
-            )
-  `
+      let cacheMessage = messageCache.get(activeCourseID)
+      console.log(cacheMessage)
+      if (true) {
+        console.log("No Cache")
+        setIsLoading(true)
+        try {
+          const { data: messagesData, error } = await supabase
+            .from("chat_messages")
+            .select(
+              `
+          *,
+          user:users!inner (
+            id,
+            name
+          ),
+          chat_channels!inner (
+            courseOfferedId
           )
-          .eq("channel.course_offered_id", activeCourseID)
-          .order("created_at", { ascending: true })
-          .limit(50)
-        if (error) throw error
-        const formattedMessages = messagesData.map((msg) => ({
-          id: msg.id,
-          sender: msg.user.name,
-          message: msg.content,
-          timestamp: msg.created_at,
-          userId: msg.user.id,
-        }))
+        `
+            )
+            .eq("chat_channels.courseOfferedId", activeCourseID)
+            .order("createdAt", { ascending: true })
+            .limit(50)
+          if (error) throw error
+          const formattedMessages = messagesData.map((msg) => ({
+            id: msg.id,
+            sender: msg.user.name,
+            message: msg.content,
+            timestamp: msg.createdAt,
+            userId: msg.user.id,
+          }))
 
-        setMessages(formattedMessages)
-      } catch (error) {
-        throw error
-      } finally {
+          setMessages(formattedMessages)
+          messageCache.set(activeCourseID, formattedMessages)
+        } catch (error) {
+          throw error
+        } finally {
+          setIsLoading(false)
+          console.log(messageCache)
+        }
+      } else {
+        console.log("Getting Cached Message")
+        setMessages(messageCache.get(activeCourseID))
         setIsLoading(false)
       }
     }
+    console.log("loadings")
     loadMessages()
   }, [activeCourseID])
 
@@ -82,6 +96,9 @@ const ChatBox = ({ userProfile, activeCourseID }) => {
   })
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    // if (messages.length > 0) {
+    //   messageCache.set(activeCourseID, messages)
+    // }
   }, [messages])
 
   const newMessage = (newmessage) => {
@@ -94,7 +111,6 @@ const ChatBox = ({ userProfile, activeCourseID }) => {
     if (!message.trim()) return
 
     const newMsg = {
-      id: crypto.randomUUID(),
       sender: userProfile.name,
       message: message.trim(),
       timestamp: new Date().toISOString(),
@@ -108,34 +124,34 @@ const ChatBox = ({ userProfile, activeCourseID }) => {
   }
 
   return (
-    <div className="h-full w-full grid grid-rows-[8fr_1fr] gap-2">
-      <Card className="h-full bg-secondary-foreground rounded-2sm">
-        <CardContent className="flex flex-col gap-3">
-          {messages.map((m, idx) => {
-            return (
-              <div key={idx}>
-                {m.sender === userProfile.name ? (
-                  <div className="w-full h-full flex justify-end">
-                    <span className="font-bold"></span>
-                    <span>{m.message}</span>
-                  </div>
-                ) : (
+    <div className="h-full w-full grid grid-rows-[7fr_1fr] gap-2">
+      <Card className="bg-muted/30 rounded-2sm border-none overflow-hidden min-h-0">
+        <ScrollArea className="h-full w-full">
+          <CardContent className="">
+            {messages.map((m, idx) => {
+              return (
+                <div key={idx}>
                   <div className="w-full h-full flex justify-start">
-                    <span className="font-bold">{m.sender}: </span>
-                    <span>{m.message}</span>
+                    <ChatNameDisplay message={m} />
                   </div>
-                )}
-              </div>
-            )
-          })}
-          <div ref={messagesEndRef} />
-        </CardContent>
+                </div>
+              )
+            })}
+            <div ref={messagesEndRef} />
+          </CardContent>
+        </ScrollArea>
       </Card>
-      <div className="flex items-end gap-2">
+      <div className="h-full w-full flex items-end gap-2">
         <Textarea
-          className="w-full min-h-1.5 rounded-xs"
+          className="w-full rounded-xs"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(event) => {
+            if (event.key == "Enter" && !event.shiftKey) {
+              event.preventDefault()
+              handleMessageSubmit()
+            }
+          }}
         />
         <Button onClick={handleMessageSubmit}>
           <SendHorizonal />

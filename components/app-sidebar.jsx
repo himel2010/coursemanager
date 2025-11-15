@@ -146,7 +146,12 @@ const data = {
   ],
 }
 
-export function AppSidebar({ courses, setIsActive, ...props }) {
+export function AppSidebar({
+  courses,
+  setIsActive,
+  handleCourseChange,
+  ...props
+}) {
   // Note: I'm using state to show active item.
   // IRL you should use the url/router.
 
@@ -154,7 +159,7 @@ export function AppSidebar({ courses, setIsActive, ...props }) {
   const [mails, setMails] = React.useState(data.mails)
   const { setOpen } = useSidebar()
 
-  const handleactive = (idx) => {
+  const handleactive = (idx, id) => {
     setIsActive(idx)
   }
 
@@ -253,9 +258,9 @@ export function AppSidebar({ courses, setIsActive, ...props }) {
 
                 return (
                   <div
-                    onClick={() => handleactive(idx)}
+                    onClick={() => handleactive(idx, id)}
                     key={id}
-                    className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
+                    className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:cursor-pointer flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
                   >
                     <div className="flex w-full items-center gap-2">
                       <span className="font-bold">
