@@ -10,7 +10,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [userProfile, setUserProfile] = useState(null) // Additional user data from Prisma
   const [loading, setLoading] = useState(true)
+  const [courses, setCourses] = useState(null)
   const supabase = createClient()
+
+  useEffect(() => {
+    if (userProfile?.enrollments) {
+      const extractedCourses = userProfile.enrollments.map(
+        (enrollment) => enrollment.courseOffered
+      )
+      setCourses(extractedCourses)
+    }
+  }, [userProfile]) // Run when userProfile changes
 
   useEffect(() => {
     // Get initial session
@@ -57,6 +67,7 @@ export function AuthProvider({ children }) {
     user,
     userProfile, // Prisma user data (name, role, etc.)
     loading,
+    courses,
     signUp: (email, password) => supabase.auth.signUp({ email, password }),
     signIn: (email, password) =>
       supabase.auth.signInWithPassword({ email, password }),

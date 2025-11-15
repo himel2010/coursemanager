@@ -6,20 +6,10 @@ import { useAuth } from "@/lib/auth/AuthContext"
 import React, { useEffect, useState } from "react"
 
 const UserDashboard = () => {
-  const { userProfile } = useAuth()
-  const [courses, setCourses] = useState()
+  const { userProfile, courses } = useAuth()
+  // const [courses, setCourses] = useState()
 
   const [mount, setMount] = useState(false)
-
-  useEffect(() => {
-    if (userProfile?.enrollments) {
-      // Extract all courseOffered at once, no spreading needed
-      const extractedCourses = userProfile.enrollments.map(
-        (enrollment) => enrollment.courseOffered
-      )
-      setCourses(extractedCourses)
-    }
-  }, [userProfile])
 
   useEffect(() => {
     setMount(true)

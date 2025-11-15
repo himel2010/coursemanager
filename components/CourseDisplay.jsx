@@ -9,6 +9,7 @@ import {
 import { Badge } from "./ui/badge"
 import { Calendar, Mail, MapPin, User } from "lucide-react"
 import { Separator } from "./ui/separator"
+import { redirect } from "next/navigation"
 
 export function CourseDisplay({ courses }) {
   return (
@@ -16,6 +17,7 @@ export function CourseDisplay({ courses }) {
       {courses &&
         courses.map((course, idx) => {
           const {
+            id,
             course: { code },
             section,
             theoryFaculty,
@@ -34,27 +36,28 @@ export function CourseDisplay({ courses }) {
                     </h1>
                     <Badge variant="destructive">{section}</Badge>
                   </ItemTitle>
+                  <div></div>
                   <ItemDescription>
-                    <div className="text-muted-foreground flex flex-wrap gap-4 text-sm">
-                      <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground flex flex-wrap gap-4 text-sm">
+                      <span className="flex items-center gap-1">
                         <User className="size-4" />
                         {theoryFaculty?.initial}
-                      </div>
-                      <div className="flex items-center gap-1">
+                      </span>
+                      <span className="flex items-center gap-1">
                         <Mail className="size-4" />
                         {theoryFaculty?.email}
-                      </div>
-                      <div className="flex items-center gap-1">
+                      </span>
+                      <span className="flex items-center gap-1">
                         <MapPin className="size-4" />
                         {theory?.room}
-                      </div>
-                      <div className="flex items-center gap-1">
+                      </span>
+                      <span className="flex items-center gap-1">
                         <Calendar className="size-4" />
                         {theory?.startTime}
                         <Separator orientation="vertical" />
                         {theory?.day1} - {theory?.day2}
-                      </div>
-                    </div>
+                      </span>
+                    </span>
                   </ItemDescription>
                 </ItemContent>
                 <ItemActions>
@@ -62,13 +65,13 @@ export function CourseDisplay({ courses }) {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      console.log(courses)
+                      redirect(`/course/chat`)
                     }}
                   >
                     Open
                   </Button>
                 </ItemActions>
-              </Item>{" "}
+              </Item>
             </div>
           )
         })}
