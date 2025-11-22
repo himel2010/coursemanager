@@ -2,7 +2,9 @@
 import { CourseDisplay } from "@/components/CourseDisplay"
 import ProfileHeader from "@/components/profile-header"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth/AuthContext"
+import { Heart } from "lucide-react"
 import { redirect } from "next/navigation"
 import React, { useEffect, useState } from "react"
 
@@ -31,6 +33,12 @@ const UserDashboard = () => {
         Go to Chat
       </Button>
       <CourseDisplay courses={courses} />
+      <Card className="card">
+        <CardContent className=" flex justify-center">
+          <Heart />
+        </CardContent>
+      </Card>
+      <div className="Card flex justify-center p-5 ">asd</div>
     </div>
   )
 }

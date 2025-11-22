@@ -1,5 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap");
-
+/* @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Patrick+Hand&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Ubuntu+Sans:ital,wght@0,100..800;1,100..800&display=swap"); */
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -8,11 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, "Liberation Mono", "Courier New", monospace;
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -107,9 +102,10 @@
   --sidebar-border: oklch(0.9401 0 0);
   --sidebar-ring: oklch(0.7731 0 0);
   --destructive-foreground: oklch(1 0 0);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+  --font-sans: var(--font-ubuntu-sans), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji" !important;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, "Liberation Mono", "Courier New", monospace;
@@ -170,12 +166,13 @@
   --sidebar-ring: oklch(0.7731 0 0);
   --destructive-foreground: oklch(1 0 0);
   --radius: 0.5rem;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans: var(--font-ubuntu-sans), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
   --shadow-color: oklch(0 0 0);
   --shadow-opacity: 0.1;
   --shadow-blur: 3px;
@@ -198,12 +195,326 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 }
 
+.sketch {
+  --font-sans: var(--font-patrick), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji" !important;
+  --font-serif: "Patrick Hand", ui-serif, Georgia, Cambria, "Times New Roman",
+    Times, serif;
+  --font-mono: var(--font-patrick), ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  --radius: 0.5rem;
+
+  /* Paper backgrounds */
+  --background: oklch(0.98 0.008 85); /* warm cream paper */
+  --foreground: oklch(0.28 0.015 25); /* soft charcoal */
+
+  --card: oklch(0.985 0.006 88);
+  --card-foreground: oklch(0.25 0.018 28);
+
+  --popover: oklch(0.99 0.005 90);
+  --popover-foreground: oklch(0.3 0.012 22);
+
+  /* Hand-drawn pencil highlight */
+  --primary: oklch(0.45 0.12 265); /* rich violet pencil */
+  --primary-foreground: oklch(0.99 0 0);
+
+  /* Light graphite shading */
+  --secondary: oklch(0.88 0.015 85);
+  --secondary-foreground: oklch(0.32 0.018 28);
+
+  /* Muted pencil tones */
+  --muted: oklch(0.91 0.008 88);
+  --muted-foreground: oklch(0.52 0.012 35);
+
+  /* Sketch accent - like a highlighter stroke */
+  --accent: oklch(0.85 0.025 80);
+  --accent-foreground: oklch(0.28 0.025 25);
+
+  --destructive: oklch(48.718% 0.12466 40.716); /* red pen */
+  --destructive-foreground: oklch(0.99 0 0);
+
+  /* Borders (hand-drawn ink) */
+  --border: oklch(0.65 0.008 30);
+  --input: oklch(0.7 0.015 32);
+  --ring: oklch(0.45 0.12 265);
+
+  /* Charts (sketched palette) */
+  --chart-1: oklch(0.52 0.11 270);
+  --chart-2: oklch(0.68 0.09 160);
+  --chart-3: oklch(0.6 0.13 40);
+  --chart-4: oklch(0.75 0.08 200);
+  --chart-5: oklch(0.48 0.1 320);
+
+  /* Sidebar */
+  --sidebar: oklch(0.96 0.01 88);
+  --sidebar-foreground: oklch(0.28 0.015 25);
+  --sidebar-primary: oklch(0.45 0.12 265);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.88 0.02 85);
+  --sidebar-accent-foreground: oklch(0.25 0.02 28);
+  --sidebar-border: oklch(0.8 0.008 88);
+  --sidebar-ring: oklch(0.35 0.015 28);
+
+  /* Shadows → subtle graphite smudge */
+  --shadow-color: oklch(0.15 0.01 30);
+  --shadow-opacity: 0.12;
+  --shadow-blur: 3px;
+  --shadow-offset-x: 1px;
+  --shadow-offset-y: 1.5px;
+
+  --tracking-normal: 0.02em;
+
+  /* Enhanced paper texture with grain */
+  --paper-texture: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.02) 0px,
+      rgba(0, 0, 0, 0.02) 1px,
+      transparent 1px,
+      transparent 6px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.015) 0px,
+      rgba(0, 0, 0, 0.015) 1px,
+      transparent 1px,
+      transparent 6px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      rgba(139, 117, 87, 0.015) 0px,
+      transparent 2px,
+      transparent 4px
+    );
+
+  --paper-folds: radial-gradient(
+      ellipse at 30% 20%,
+      rgba(0, 0, 0, 0.015) 0%,
+      transparent 50%
+    ),
+    radial-gradient(ellipse at 70% 80%, rgba(0, 0, 0, 0.01) 0%, transparent 50%),
+    linear-gradient(
+      180deg,
+      rgba(255, 248, 230, 0.3) 0%,
+      rgba(0, 0, 0, 0.008) 48%,
+      rgba(255, 255, 255, 0.25) 52%,
+      rgba(0, 0, 0, 0.012) 100%
+    );
+}
+
+/* REPLACE YOUR ENTIRE @layer base SECTION WITH THIS */
+
+/* REPLACE YOUR ENTIRE @layer base SECTION WITH THIS */
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
   }
+
+  /* ===== SKETCH THEME STYLES ===== */
+
+  /* Paper/Blackboard background texture */
+  .sketch body {
+    background-image: var(--paper-texture), var(--paper-folds);
+    background-size: cover, cover;
+    background-blend-mode: multiply, overlay;
+    background-attachment: fixed;
+  }
+
+  /* Reset default borders - make them invisible for sketch theme */
+  .sketch * {
+    border: none;
+    box-shadow: none;
+  }
+
+  /* Hand-drawn borders using SVG filter simulation with multiple shadows */
+  .sketch button,
+  .sketch input,
+  .sketch textarea,
+  .sketch select,
+  .sketch [role="button"],
+  .sketch [class*="card"],
+  .sketch [class*="Card"],
+  .sketch [class*="dialog"],
+  .sketch [class*="Dialog"],
+  .sketch [class*="sheet"],
+  .sketch [class*="Sheet"],
+  .sketch [class*="popover"],
+  .sketch [class*="Popover"] {
+    position: relative;
+    background: var(--background);
+    border-radius: 4px;
+
+    /* Create hand-drawn effect with irregular shadow pattern */
+    box-shadow: 
+      /* Top edge - slightly wavy */ -2px -1px 0 0 var(--border),
+      -1px -1px 0 0 var(--border), 0px -1.5px 0 0 var(--border),
+      1px -1px 0 0 var(--border), 2px -1px 0 0 var(--border),
+      /* Right edge - slightly wavy */ 1.5px -1px 0 0 var(--border),
+      2px 0px 0 0 var(--border), 1.5px 1px 0 0 var(--border),
+      2px 2px 0 0 var(--border),
+      /* Bottom edge - slightly wavy */ 2px 1.5px 0 0 var(--border),
+      1px 2px 0 0 var(--border), 0px 1.5px 0 0 var(--border),
+      -1px 2px 0 0 var(--border), -2px 1.5px 0 0 var(--border),
+      /* Left edge - slightly wavy */ -1.5px 2px 0 0 var(--border),
+      -2px 1px 0 0 var(--border), -1.5px 0px 0 0 var(--border),
+      -2px -1px 0 0 var(--border),
+      /* Add subtle depth */ 2px 3px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Input elements - lighter sketch effect */
+  .sketch input,
+  .sketch textarea,
+  .sketch select {
+    background: var(--background);
+    box-shadow: -1.5px -1px 0 0 var(--input), -1px -1px 0 0 var(--input),
+      0px -1px 0 0 var(--input), 1px -1px 0 0 var(--input),
+      1.5px -1px 0 0 var(--input), 1.5px 0px 0 0 var(--input),
+      1.5px 1px 0 0 var(--input), 1px 1px 0 0 var(--input),
+      0px 1px 0 0 var(--input), -1px 1px 0 0 var(--input),
+      -1.5px 1px 0 0 var(--input), -1.5px 0px 0 0 var(--input),
+      /* Inner shadow for depth */ inset 1px 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Buttons - more pronounced sketch */
+  .sketch button,
+  .sketch [role="button"] {
+    cursor: pointer;
+    box-shadow: -2px -1px 0 0 var(--border), -1px -1.5px 0 0 var(--border),
+      0px -2px 0 0 var(--border), 1px -1.5px 0 0 var(--border),
+      2px -1px 0 0 var(--border), 2.5px 0px 0 0 var(--border),
+      2px 1px 0 0 var(--border), 2.5px 2px 0 0 var(--border),
+      2px 2.5px 0 0 var(--border), 1px 2px 0 0 var(--border),
+      0px 2.5px 0 0 var(--border), -1px 2px 0 0 var(--border),
+      -2px 2.5px 0 0 var(--border), -2.5px 2px 0 0 var(--border),
+      -2px 1px 0 0 var(--border), -2.5px 0px 0 0 var(--border),
+      /* Drop shadow */ 3px 4px 6px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Hover effect - pen pressing on paper */
+  .sketch button:hover,
+  .sketch [role="button"]:hover {
+    transform: translate(-0.5px, -0.5px);
+    box-shadow: -2.5px -1px 0 0 var(--primary), -1px -2px 0 0 var(--primary),
+      0px -2px 0 0 var(--primary), 1px -2px 0 0 var(--primary),
+      2.5px -1px 0 0 var(--primary), 3px 0px 0 0 var(--primary),
+      2.5px 1px 0 0 var(--primary), 3px 2.5px 0 0 var(--primary),
+      2.5px 3px 0 0 var(--primary), 1px 2.5px 0 0 var(--primary),
+      0px 3px 0 0 var(--primary), -1px 2.5px 0 0 var(--primary),
+      -2.5px 3px 0 0 var(--primary), -3px 2.5px 0 0 var(--primary),
+      -2.5px 1px 0 0 var(--primary), -3px 0px 0 0 var(--primary),
+      4px 5px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Focus states - pen underline effect */
+  .sketch input:focus,
+  .sketch textarea:focus,
+  .sketch select:focus {
+    outline: none;
+    box-shadow: -2px -1px 0 0 var(--ring), -1px -1.5px 0 0 var(--ring),
+      0px -2px 0 0 var(--ring), 1px -1.5px 0 0 var(--ring),
+      2px -1px 0 0 var(--ring), 2.5px 0px 0 0 var(--ring),
+      2px 1px 0 0 var(--ring), 2.5px 2px 0 0 var(--ring),
+      2px 2.5px 0 0 var(--ring), 1px 2px 0 0 var(--ring),
+      0px 2.5px 0 0 var(--ring), -1px 2px 0 0 var(--ring),
+      -2px 2.5px 0 0 var(--ring), -2.5px 2px 0 0 var(--ring),
+      -2px 1px 0 0 var(--ring), -2.5px 0px 0 0 var(--ring),
+      /* Glow effect */ 0 0 0 3px oklch(from var(--ring) l c h / 0.2),
+      inset 1px 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Cards - paper note effect with more prominent shadow */
+  .sketch [class*="card"],
+  .sketch [class*="Card"] {
+    box-shadow: -2.5px -1.5px 0 0 var(--border), -1.5px -2px 0 0 var(--border),
+      0px -2.5px 0 0 var(--border), 1.5px -2px 0 0 var(--border),
+      2.5px -1.5px 0 0 var(--border), 3px 0px 0 0 var(--border),
+      2.5px 1.5px 0 0 var(--border), 3px 3px 0 0 var(--border),
+      2.5px 3.5px 0 0 var(--border), 1.5px 3px 0 0 var(--border),
+      0px 3.5px 0 0 var(--border), -1.5px 3px 0 0 var(--border),
+      -2.5px 3.5px 0 0 var(--border), -3px 3px 0 0 var(--border),
+      -2.5px 1.5px 0 0 var(--border), -3px 0px 0 0 var(--border),
+      /* Bigger paper shadow */ 4px 6px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Smooth but quick transitions */
+  .sketch button,
+  .sketch input,
+  .sketch textarea,
+  .sketch select,
+  .sketch [role="button"] {
+    transition: transform 0.1s ease-out, box-shadow 0.15s ease-out;
+  }
+
+  /* Text rendering */
+  .sketch {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Don't apply sketch borders to icons, SVGs, and small UI elements */
+  .sketch svg,
+  .sketch svg *,
+  .sketch img,
+  .sketch [class*="icon"],
+  .sketch [class*="Icon"],
+  .sketch [data-slot="icon"],
+  .sketch hr {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Avatar circles should remain circular */
+  .sketch [class*="avatar"],
+  .sketch [class*="Avatar"] {
+    border-radius: 50% !important;
+    box-shadow: 0 0 0 2px var(--border), 2px 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Sidebar specific styling */
+  .sketch [class*="sidebar"],
+  .sketch [class*="Sidebar"] {
+    box-shadow: 2px 0 0 0 var(--sidebar-border), 3px 0 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Remove borders from navigation and layout containers */
+.sketch nav,
+.sketch header,
+.sketch footer,
+.sketch main,
+.sketch aside,
+.sketch section {
+  box-shadow: none !important;
+}
+
+/* Primary buttons get special treatment */
+.sketch [class*="primary"] button,
+.sketch button[class*="primary"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: -2.5px -1.5px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    -1.5px -2px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    0px -2.5px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    1.5px -2px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    2.5px -1.5px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    3px 0px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    2.5px 1.5px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    3px 3px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    2.5px 3.5px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    1.5px 3px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    0px 3.5px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    -1.5px 3px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    -2.5px 3.5px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    -3px 3px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    -2.5px 1.5px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    -3px 0px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
+    4px 5px 10px rgba(0, 0, 0, 0.2);
 }
