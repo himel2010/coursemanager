@@ -49,7 +49,7 @@ const HeroSection = () => {
           From storing notes to connecting with like minded people
         </p>
 
-        <Button size="lg" asChild>
+        <Button size="lg">
           <a href="/user-dashboard">Try It Now</a>
         </Button>
       </div>

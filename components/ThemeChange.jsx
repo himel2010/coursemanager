@@ -34,6 +34,9 @@ export function ThemeChange() {
         <DropdownMenuItem onClick={() => setTheme("system")}>
           System
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("sketch")}>
+          Sketch
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

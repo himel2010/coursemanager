@@ -13,7 +13,7 @@ const navigationData = [
   },
   {
     title: "Admin",
-    href: "#",
+    href: "/admin",
   },
 ]
 
