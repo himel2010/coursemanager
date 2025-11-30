@@ -33,12 +33,6 @@ const UserDashboard = () => {
         Go to Chat
       </Button>
       <CourseDisplay courses={courses} />
-      <Card className="card">
-        <CardContent className=" flex justify-center">
-          <Heart />
-        </CardContent>
-      </Card>
-      <div className="Card flex justify-center p-5 ">asd</div>
     </div>
   )
 }
