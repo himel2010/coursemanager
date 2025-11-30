@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Link from 'next/link'
 import Header from "@/components/shadcn-studio/blocks/hero-section-01/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,6 +30,15 @@ const navigationData = [
   },
 ]
 
+// Sample users in channels
+const CHANNEL_USERS = [
+  { id: 1, name: 'Alice Johnson', avatar: 'AJ', status: 'online' },
+  { id: 2, name: 'Bob Smith', avatar: 'BS', status: 'online' },
+  { id: 3, name: 'Charlie Brown', avatar: 'CB', status: 'offline' },
+  { id: 4, name: 'Diana Prince', avatar: 'DP', status: 'online' },
+  { id: 5, name: 'Ethan Hunt', avatar: 'EH', status: 'away' },
+]
+
 export default function ChannelsPage() {
   const [channels, setChannels] = useState([
     { id: 1, name: 'general', description: 'General discussion' },
@@ -38,7 +48,7 @@ export default function ChannelsPage() {
   
   const [messages, setMessages] = useState({
     1: [
-      { id: 1, author: 'You', content: 'Welcome to general!', timestamp: new Date(Date.now() - 3600000), type: 'text' },
+      { id: 1, author: 'You', userId: 'current-user', avatar: 'YU', content: 'Welcome to general!', timestamp: new Date(Date.now() - 3600000), type: 'text' },
     ],
     2: [],
     3: [],
@@ -53,6 +63,8 @@ export default function ChannelsPage() {
   const [editingChannelId, setEditingChannelId] = useState(null)
   const [editName, setEditName] = useState('')
   const [editDesc, setEditDesc] = useState('')
+  const [selectedUserForDM, setSelectedUserForDM] = useState(null)
+  const [showUserProfile, setShowUserProfile] = useState(false)
   const fileInputRef = useRef(null)
   const scrollAreaRef = useRef(null)
 
@@ -120,6 +132,8 @@ export default function ChannelsPage() {
     const newMessage = {
       id: Math.random(),
       author: 'You',
+      userId: 'current-user',
+      avatar: 'YU',
       content: messageText,
       timestamp: new Date(),
       type: attachments.length > 0 ? 'mixed' : 'text',
@@ -137,6 +151,19 @@ export default function ChannelsPage() {
 
   const removeAttachment = (id) => {
     setAttachments(prev => prev.filter(a => a.id !== id))
+  }
+
+  const handleUserClick = (user) => {
+    setSelectedUserForDM(user)
+    setShowUserProfile(true)
+  }
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'online': return 'bg-green-500'
+      case 'away': return 'bg-yellow-500'
+      default: return 'bg-gray-400'
+    }
   }
 
   const isImage = (type) => type.startsWith('image/')
@@ -184,10 +211,10 @@ export default function ChannelsPage() {
                     {channels.map(channel => (
                       <div
                         key={channel.id}
-                        className={`group p-3 rounded-lg cursor-pointer transition-colors border ${
+                        className={`group p-3 rounded-lg cursor-pointer transition-all border-l-4 ${
                           selectedChannelId === channel.id
-                            ? 'bg-slate-100 border-slate-300'
-                            : 'hover:bg-slate-50 border-transparent hover:border-slate-200'
+                            ? 'bg-blue-50 border-l-blue-600 text-blue-900 font-semibold'
+                            : 'hover:bg-blue-100/40 border-l-transparent hover:border-l-blue-300'
                         }`}
                         onClick={() => setSelectedChannelId(channel.id)}
                       >
@@ -279,13 +306,23 @@ export default function ChannelsPage() {
                       </div>
                     ) : (
                       channelMessages.map(msg => (
-                        <div key={msg.id} className="flex gap-3 group">
-                          <div className="w-10 h-10 rounded-full bg-slate-300 flex-shrink-0 flex items-center justify-center">
-                            <span className="text-sm font-semibold">{msg.author[0]}</span>
-                          </div>
+                        <div key={msg.id} className="flex gap-3 group hover:bg-blue-100/40 p-2 rounded-lg transition-all border-l-4 border-l-transparent hover:border-l-blue-300">
+                          <button
+                            onClick={() => handleUserClick(msg)}
+                            className="w-10 h-10 rounded-full bg-blue-400 hover:bg-blue-500 flex-shrink-0 flex items-center justify-center text-sm font-semibold text-white hover:ring-2 hover:ring-blue-600 transition-all cursor-pointer"
+                            title={`Click to message ${msg.author}`}
+                          >
+                            {msg.avatar}
+                          </button>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm">{msg.author}</span>
+                              <button
+                                onClick={() => handleUserClick(msg)}
+                                className="font-semibold text-sm hover:text-blue-600 hover:underline transition-colors cursor-pointer"
+                                title={`Click to message ${msg.author}`}
+                              >
+                                {msg.author}
+                              </button>
                               <span className="text-xs text-muted-foreground">{formatTime(msg.timestamp)}</span>
                             </div>
                             {msg.content && (
@@ -408,7 +445,7 @@ export default function ChannelsPage() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Shift+Enter for new line • Supported: Images, Videos, PDFs, Documents
+                    Shift+Enter for new line • Click on user avatar or name to send DM
                   </p>
                 </div>
               </Card>
@@ -420,6 +457,55 @@ export default function ChannelsPage() {
           </div>
         </div>
       </main>
+
+      {/* User Profile & DM Modal */}
+      {showUserProfile && selectedUserForDM && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full bg-slate-400 flex items-center justify-center text-lg font-semibold text-white">
+                    {selectedUserForDM.avatar}
+                  </div>
+                  <div className={`absolute bottom-0 right-0 w-4 h-4 ${getStatusColor(selectedUserForDM.status)} rounded-full border-2 border-white`}></div>
+                </div>
+                <div>
+                  <CardTitle>{selectedUserForDM.author}</CardTitle>
+                  <CardDescription className="capitalize">{selectedUserForDM.status || 'online'}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-4">What would you like to do?</p>
+              </div>
+              <div className="flex gap-3 flex-col">
+                <Link href="/community/direct-messages" className="w-full">
+                  <Button className="w-full">
+                    💬 Send Direct Message
+                  </Button>
+                </Link>
+                <Button variant="outline" className="w-full">
+                  👤 View Profile
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowUserProfile(false)
+                    setSelectedUserForDM(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Create Channel Modal */}
       {showCreateModal && (
@@ -511,3 +597,4 @@ export default function ChannelsPage() {
     </div>
   )
 }
+
