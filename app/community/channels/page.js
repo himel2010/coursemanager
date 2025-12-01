@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Header from "@/components/shadcn-studio/blocks/hero-section-01/header"
 import { Button } from "@/components/ui/button"
@@ -40,21 +40,14 @@ const CHANNEL_USERS = [
 ]
 
 export default function ChannelsPage() {
-  const [channels, setChannels] = useState([
-    { id: 1, name: 'general', description: 'General discussion' },
-    { id: 2, name: 'announcements', description: 'Important announcements' },
-    { id: 3, name: 'random', description: 'Off-topic conversations' },
-  ])
-  
-  const [messages, setMessages] = useState({
-    1: [
-      { id: 1, author: 'You', userId: 'current-user', avatar: 'YU', content: 'Welcome to general!', timestamp: new Date(Date.now() - 3600000), type: 'text' },
-    ],
-    2: [],
-    3: [],
-  })
-  
-  const [selectedChannelId, setSelectedChannelId] = useState(1)
+  const [workspaces, setWorkspaces] = useState([])
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(null)
+
+  const [channels, setChannels] = useState([])
+
+  const [messages, setMessages] = useState({})
+
+  const [selectedChannelId, setSelectedChannelId] = useState(null)
   const [messageText, setMessageText] = useState('')
   const [attachments, setAttachments] = useState([])
   const [newChannelName, setNewChannelName] = useState('')
@@ -76,11 +69,13 @@ export default function ChannelsPage() {
       const newChannel = {
         id: Math.max(...channels.map(c => c.id), 0) + 1,
         name: newChannelName.toLowerCase().replace(/\s+/g, '-'),
-        description: newChannelDesc || 'No description'
+        description: newChannelDesc || 'No description',
       }
-      setChannels([...channels, newChannel])
+      const updated = [...channels, newChannel]
+      setChannels(updated)
       setMessages(prev => ({ ...prev, [newChannel.id]: [] }))
       setSelectedChannelId(newChannel.id)
+      persistChannelsForWorkspace(selectedWorkspaceId, updated)
       setNewChannelName('')
       setNewChannelDesc('')
       setShowCreateModal(false)
@@ -88,11 +83,13 @@ export default function ChannelsPage() {
   }
 
   const renameChannel = (channelId, newName, newDesc) => {
-    setChannels(channels.map(c => 
-      c.id === channelId 
+    const updated = channels.map(c =>
+      c.id === channelId
         ? { ...c, name: newName.toLowerCase().replace(/\s+/g, '-'), description: newDesc }
         : c
-    ))
+    )
+    setChannels(updated)
+    persistChannelsForWorkspace(selectedWorkspaceId, updated)
     setEditingChannelId(null)
   }
 
@@ -102,6 +99,7 @@ export default function ChannelsPage() {
     const updatedMessages = { ...messages }
     delete updatedMessages[channelId]
     setMessages(updatedMessages)
+    persistChannelsForWorkspace(selectedWorkspaceId, updatedChannels, updatedMessages)
     if (selectedChannelId === channelId) {
       setSelectedChannelId(updatedChannels[0]?.id || null)
     }
@@ -158,6 +156,73 @@ export default function ChannelsPage() {
     setShowUserProfile(true)
   }
 
+  // Persistence helpers: store channels per workspace in localStorage
+  const workspaceStorageKey = (workspaceId) => `channels:${workspaceId}`
+
+  const persistChannelsForWorkspace = (workspaceId, channelList, msgs = null) => {
+    if (!workspaceId) return
+    try {
+      const payload = { channels: channelList, messages: msgs || messages }
+      localStorage.setItem(workspaceStorageKey(workspaceId), JSON.stringify(payload))
+    } catch (e) {
+      console.warn('Failed to persist channels', e)
+    }
+  }
+
+  const loadChannelsForWorkspace = (workspaceId) => {
+    if (!workspaceId) return null
+    try {
+      const raw = localStorage.getItem(workspaceStorageKey(workspaceId))
+      if (!raw) return null
+      return JSON.parse(raw)
+    } catch (e) {
+      console.warn('Failed to parse workspace channels', e)
+      return null
+    }
+  }
+
+  useEffect(() => {
+    // Fetch workspaces (course offerings)
+    let mounted = true
+    const load = async () => {
+      try {
+        const res = await fetch('/api/workspaces')
+        if (!res.ok) throw new Error('Failed to fetch')
+        const json = await res.json()
+        if (!mounted) return
+        setWorkspaces(json.workspaces || [])
+        const first = json.workspaces && json.workspaces[0]
+        if (first) setSelectedWorkspaceId(first.id)
+      } catch (err) {
+        console.error('Error loading workspaces', err)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
+
+  useEffect(() => {
+    if (!selectedWorkspaceId) return
+    const saved = loadChannelsForWorkspace(selectedWorkspaceId)
+    if (saved && saved.channels) {
+      setChannels(saved.channels)
+      setMessages(saved.messages || {})
+      setSelectedChannelId(saved.channels[0]?.id || null)
+      return
+    }
+
+    // initialize default channels for new workspace
+    const defaultChannels = [
+      { id: 1, name: 'general', description: 'General discussion' },
+      { id: 2, name: 'announcements', description: 'Important announcements' },
+      { id: 3, name: 'random', description: 'Off-topic conversations' },
+    ]
+    setChannels(defaultChannels)
+    setMessages({ 1: [ { id: 1, author: 'You', userId: 'current-user', avatar: 'YU', content: 'Welcome to general!', timestamp: new Date(Date.now() - 3600000), type: 'text' } ], 2: [], 3: [] })
+    setSelectedChannelId(defaultChannels[0].id)
+    persistChannelsForWorkspace(selectedWorkspaceId, defaultChannels)
+  }, [selectedWorkspaceId])
+
   const getStatusColor = (status) => {
     switch(status) {
       case 'online': return 'bg-green-500'
@@ -198,6 +263,20 @@ export default function ChannelsPage() {
                 <CardTitle className="text-lg">Channels</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 flex-1 flex flex-col overflow-hidden p-3">
+                <div className="mb-2">
+                  <label className="text-sm font-medium">Workspace</label>
+                  <select
+                    value={selectedWorkspaceId || ''}
+                    onChange={(e) => setSelectedWorkspaceId(e.target.value)}
+                    className="w-full mt-1 p-2 border rounded"
+                  >
+                    {workspaces.length === 0 && <option value="">No workspaces</option>}
+                    {workspaces.map(ws => {
+                      const short = `${ws.courseCode}-${ws.semesterSeason}${String(ws.semesterYear).slice(-2)}`
+                      return <option key={ws.id} value={ws.id}>{short}</option>
+                    })}
+                  </select>
+                </div>
                 <Button 
                   onClick={() => setShowCreateModal(true)}
                   className="w-full"
