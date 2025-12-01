@@ -7,7 +7,7 @@ export default function CommunitySection() {
           <p className="text-lg text-gray-600">Stay connected with your peers and faculty</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-4 gap-8">
           {/* Section Group Chat */}
           <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <div className="text-4xl mb-4">💬</div>
@@ -35,6 +35,16 @@ export default function CommunitySection() {
             <p className="text-gray-600 mb-4">Create shared spaces for collaborative group projects with dedicated inbox.</p>
             <a href="/community/group-projects" className="text-blue-600 hover:underline font-medium">
               Create/Join Project →
+            </a>
+          </div>
+
+          {/* Help */}
+          <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+            <div className="text-4xl mb-4">🆘</div>
+            <h3 className="text-xl font-semibold mb-2">Help</h3>
+            <p className="text-gray-600 mb-4">Post course-specific problems you face and get help from peers.</p>
+            <a href="/community/help" className="text-blue-600 hover:underline font-medium">
+              Course Help →
             </a>
           </div>
         </div>
