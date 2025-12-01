@@ -9,9 +9,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-ubuntu-sans)"],
+        sans: "var(--font-sans)",
+        serif: "var(--font-serif)",
       },
     },
   },
   plugins: [],
-};
+}
