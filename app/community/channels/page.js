@@ -6,6 +6,7 @@ import Header from "@/components/shadcn-studio/blocks/hero-section-01/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/lib/auth/AuthContext"
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +41,7 @@ const CHANNEL_USERS = [
 ]
 
 export default function ChannelsPage() {
+  const { courses, userProfile } = useAuth()
   const [workspaces, setWorkspaces] = useState([])
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(null)
 
@@ -182,24 +184,20 @@ export default function ChannelsPage() {
   }
 
   useEffect(() => {
-    // Fetch workspaces (course offerings)
-    let mounted = true
-    const load = async () => {
-      try {
-        const res = await fetch('/api/workspaces')
-        if (!res.ok) throw new Error('Failed to fetch')
-        const json = await res.json()
-        if (!mounted) return
-        setWorkspaces(json.workspaces || [])
-        const first = json.workspaces && json.workspaces[0]
-        if (first) setSelectedWorkspaceId(first.id)
-      } catch (err) {
-        console.error('Error loading workspaces', err)
-      }
+    // Use user's enrolled courses as workspaces
+    if (courses && courses.length > 0) {
+      const enrolledWorkspaces = courses.map((co) => ({
+        id: co.id,
+        courseCode: co.course.code,
+        section: co.section,
+        semesterSeason: co.semester.season,
+        semesterYear: co.semester.year,
+      }))
+      setWorkspaces(enrolledWorkspaces)
+      const first = enrolledWorkspaces[0]
+      if (first) setSelectedWorkspaceId(first.id)
     }
-    load()
-    return () => { mounted = false }
-  }, [])
+  }, [courses])
 
   useEffect(() => {
     if (!selectedWorkspaceId) return
@@ -241,7 +239,9 @@ export default function ChannelsPage() {
   }
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    if (!date) return ''
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    return dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   }
 
   return (
@@ -268,7 +268,7 @@ export default function ChannelsPage() {
                   <select
                     value={selectedWorkspaceId || ''}
                     onChange={(e) => setSelectedWorkspaceId(e.target.value)}
-                    className="w-full mt-1 p-2 border rounded"
+                    className="w-full mt-1 p-2 border border-gray-300 rounded bg-slate-700 text-white font-medium hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   >
                     {workspaces.length === 0 && <option value="">No workspaces</option>}
                     {workspaces.map(ws => {
