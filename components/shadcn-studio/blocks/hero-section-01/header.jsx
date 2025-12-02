@@ -34,6 +34,14 @@ const Header = ({ className }) => {
       href: "#community",
     },
     {
+      title: "Thesis Groups",
+      href: "/thesis-groups",
+    },
+    {
+      title: "Opportunities",
+      href: "/opportunities",
+    },
+    {
       title: "Admin",
       href: "/admin",
     },
