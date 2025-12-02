@@ -69,7 +69,10 @@ export default function SignUpComponent({ courseInfo }) {
   }
 
   const handleCourseAdd = (code, sec) => {
-    if (courses.length >= 5) return
+    if (courses.length >= 5) {
+      toast.error("You cannot take more than 5 courses")
+      return
+    }
 
     const exists = courseExists(code)
 

@@ -1,8 +1,6 @@
 import HeroSection from "@/components/shadcn-studio/blocks/hero-section-01/hero-section-01"
 import Header from "@/components/shadcn-studio/blocks/hero-section-01/header"
 import CommunitySection from "@/components/shadcn-studio/blocks/community-section/community-section"
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
 
 const navigationData = [
   {
@@ -20,10 +18,6 @@ const navigationData = [
 ]
 
 const HeroSectionPage = async () => {
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.getUser()
-  console.log(data.user)
-
   return (
     <div className="relative">
       {/* Header Section */}

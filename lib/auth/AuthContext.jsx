@@ -3,15 +3,18 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import axios from "axios"
+import { redirect, useRouter } from "next/navigation"
 
 const AuthContext = createContext({})
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
+
   const [userProfile, setUserProfile] = useState(null) // Additional user data from Prisma
   const [loading, setLoading] = useState(true)
   const [courses, setCourses] = useState(null)
   const supabase = createClient()
+  const router = useRouter()
 
   useEffect(() => {
     if (userProfile?.enrollments) {
@@ -54,6 +57,8 @@ export function AuthProvider({ children }) {
   const fetchUserProfile = async (userId) => {
     try {
       const response = await axios.get(`/api/user/${userId}`)
+      console.log(response.data)
+
       setUserProfile(response.data)
     } catch (error) {
       console.error("Error fetching user profile:", error)
