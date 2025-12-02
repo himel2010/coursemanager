@@ -1,31 +1,22 @@
 import TableView from "@/components/TableView"
-import { prisma } from "@/lib/prisma"
+import { getAllInfo } from "@/lib/getAllInfo"
 
-async function getAllInfo() {
-  try {
-    const data = await prisma.faculty.findMany({
-      include: {
-        theoryCourses: {
-          include: {
-            course: {
-              select: { code: true },
-            },
-          },
-        },
-      },
-    })
-    console.log(data[0].theoryCourses)
-    return data
-  } catch (error) {
-    throw error
-  }
-}
+import axios from "axios"
+import { cookies } from "next/headers"
+import QuickDisplay from "./QuickDisplay"
+import Header from "@/components/shadcn-studio/blocks/hero-section-01/header"
 
 const Admin = async () => {
   const data = await getAllInfo()
+
   return (
-    <div className="p-5 flex gap-2 flex-col justify-center items-center">
-      <TableView adminData={data} />
+    <div className="relative">
+      <Header className="mb-5" />
+      <QuickDisplay
+        faculty={data.faculty}
+        users={data.users}
+        courses={data.courses}
+      />
     </div>
   )
 }

@@ -15,8 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 function LoginForm() {
   return (
     <div className=" w-screen h-full flex flex-col justify-center items-center">
-      <h1 className="font-sans text-2xl mb-10">Login / Signup</h1>
-
       <form className="w-[25%]">
         <FieldSet>
           <FieldGroup>
@@ -59,8 +57,6 @@ function LoginForm() {
 function SignUpForm() {
   return (
     <div className=" w-screen h-full flex flex-col justify-center items-center">
-      <h1 className="font-sans text-2xl mb-10">Login / Signup</h1>
-
       <form className="w-[25%]">
         <FieldSet>
           <FieldGroup>

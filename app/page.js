@@ -23,14 +23,11 @@ const HeroSectionPage = async () => {
   const supabase = await createClient()
   const { data, error } = await supabase.auth.getUser()
   console.log(data.user)
-  console.log(error)
-  if (!data || error) {
-    console.log("ami keno ashchi ekhane")
-  }
+
   return (
     <div className="relative">
       {/* Header Section */}
-      <Header navigationData={navigationData} />
+      <Header />
       {/* Main Content */}
       <main className="flex flex-col">
         <HeroSection />
