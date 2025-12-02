@@ -60,14 +60,15 @@ class PartyServer {
       let channelId = this.channelCache.get(this.room.id)
 
       if (!channelId) {
-        const { data: channel } = await this.supabase
+        const { data: channel, error } = await this.supabase
           .from("chat_channels")
           .select("id")
           .eq("courseOfferedId", this.room.id)
           .single()
 
         if (!channel) {
-          console.error("No channel found for course:", this.room.id)
+          console.error("No channel found for course:", this.room.id, error)
+
           return
         }
         channelId = channel.id

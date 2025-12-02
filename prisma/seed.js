@@ -304,6 +304,6 @@ async function createChat() {
   console.log(`Skipped (already exist): ${skipped}`)
   console.log(`Total courses offered: ${coursesOffered.length}`)
 }
-// main()
 // getFaculties()
+// main()
 createChat()

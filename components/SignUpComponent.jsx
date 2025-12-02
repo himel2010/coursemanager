@@ -51,6 +51,8 @@ export default function SignUpComponent({ courseInfo }) {
   const [name, setName] = useState("")
   const [id, setId] = useState("")
   const [dept, setDept] = useState("CSE")
+  const [search, setSearch] = useState("")
+
   const ref = useRef(null)
   const addCourse = () => {
     setCourses((prev) => [
@@ -195,7 +197,11 @@ export default function SignUpComponent({ courseInfo }) {
                 </FieldDescription>
                 <div className="w-full h-full flex gap-5 mt-1">
                   <Command>
-                    <CommandInput placeholder="Search your course" />
+                    <CommandInput
+                      placeholder="Search your course"
+                      value={search}
+                      onValueChange={(e) => setSearch(e)}
+                    />
                     <CommandList>
                       <CommandEmpty>No results found.</CommandEmpty>
                       <CommandGroup heading="Courses">

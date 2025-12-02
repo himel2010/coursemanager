@@ -1,4 +1,5 @@
 import SignUpComponent from "@/components/SignUpComponent"
+import Test from "@/components/Test"
 import { prisma } from "@/lib/prisma"
 
 const getCourses = async () => {
