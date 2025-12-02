@@ -50,7 +50,7 @@ const HeroSection = () => {
         </p>
 
         <Button size="lg">
-          <a href="/user-dashboard">Try It Now</a>
+          <a href="/user-dashboard">Visit your Dashboard</a>
         </Button>
       </div>
       {/* Image */}
