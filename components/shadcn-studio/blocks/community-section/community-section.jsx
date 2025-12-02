@@ -1,42 +1,60 @@
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
 export default function CommunitySection() {
   return (
-    <section className="py-16 px-4 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4">Community & Collaboration</h2>
-          <p className="text-lg text-gray-600">Stay connected with your peers and faculty</p>
+    <section className="py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">Community & Collaboration</h2>
+          <p className="text-base sm:text-lg text-muted-foreground">Stay connected with your peers and faculty</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Section Group Chat */}
-          <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div className="text-4xl mb-4">💬</div>
-            <h3 className="text-xl font-semibold mb-2">Section Group Chat</h3>
-            <p className="text-gray-600 mb-4">Dedicated group chat for each course section to communicate with fellow students.</p>
-            <a href="/community/section-chat" className="text-blue-600 hover:underline font-medium">
-              Access Chat →
-            </a>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+          {/* Community Channels */}
+          <Card className="flex flex-col h-full hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="text-4xl mb-4">💬</div>
+              <CardTitle>Community Channels</CardTitle>
+              <CardDescription>Dedicated communication space</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <p className="text-sm text-muted-foreground mb-6">Create and manage dedicated channels for your course sections to communicate with fellow students.</p>
+              <Button asChild variant="default" className="w-full">
+                <a href="/community/channels">Access Channels →</a>
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Faculty Email */}
-          <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div className="text-4xl mb-4">✉️</div>
-            <h3 className="text-xl font-semibold mb-2">Faculty Communication</h3>
-            <p className="text-gray-600 mb-4">Send emails directly to your faculty members from within the app.</p>
-            <a href="/community/faculty-email" className="text-blue-600 hover:underline font-medium">
-              Send Email →
-            </a>
-          </div>
+          <Card className="flex flex-col h-full hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="text-4xl mb-4">✉️</div>
+              <CardTitle>Faculty Communication</CardTitle>
+              <CardDescription>Connect with instructors</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <p className="text-sm text-muted-foreground mb-6">Send emails directly to your faculty members from within the app.</p>
+              <Button asChild variant="default" className="w-full">
+                <a href="/community/faculty-email">Send Email →</a>
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Group Projects */}
-          <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div className="text-4xl mb-4">👥</div>
-            <h3 className="text-xl font-semibold mb-2">Group Projects</h3>
-            <p className="text-gray-600 mb-4">Create shared spaces for collaborative group projects with dedicated inbox.</p>
-            <a href="/community/group-projects" className="text-blue-600 hover:underline font-medium">
-              Create/Join Project →
-            </a>
-          </div>
+          <Card className="flex flex-col h-full hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="text-4xl mb-4">👥</div>
+              <CardTitle>Group Projects</CardTitle>
+              <CardDescription>Collaborate with peers</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <p className="text-sm text-muted-foreground mb-6">Create shared spaces for collaborative group projects with dedicated inbox for group members.</p>
+              <Button asChild variant="default" className="w-full">
+                <a href="/community/group-projects">Create/Join Project →</a>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
