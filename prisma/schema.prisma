@@ -10,25 +10,29 @@ datasource db {
 }
 
 model User {
-  id               String            @id @db.Uuid
-  email            String            @unique
-  name             String?
-  role             UserRole?         @default(STUDENT)
-  studentId        String?           @unique
-  departmentId     String?           @db.Uuid
-  isFinalYear      Boolean?          @default(false)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime?         @updatedAt
-  calendarEvents   CalendarEvent[]
-  chatMessages     ChatMessage[]
-  enrollments      Enrollment[]
-  forumComments    ForumComment[]
-  forumPosts       ForumPost[]
-  groupMemberships GroupMembership[]
-  notes            Note[]
-  quizAttempts     QuizAttempt[]
-  uploads          Upload[]
-  department       Department?       @relation(fields: [departmentId], references: [id])
+  id                  String               @id @db.Uuid
+  email               String               @unique
+  name                String?
+  role                UserRole?            @default(STUDENT)
+  studentId           String?              @unique
+  departmentId        String?              @db.Uuid
+  isFinalYear         Boolean?             @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime?            @updatedAt
+  calendarEvents      CalendarEvent[]
+  chatMessages        ChatMessage[]
+  enrollments         Enrollment[]
+  forumComments       ForumComment[]
+  forumPosts          ForumPost[]
+  groupMemberships    GroupMembership[]
+  notes               Note[]
+  quizAttempts        QuizAttempt[]
+  uploads             Upload[]
+  applications        StudentApplication[]
+  thesisGroupsCreated ThesisGroup[]        @relation("ThesisGroupCreator")
+  groupMembers        GroupMember[]        @relation("GroupMember")
+  joinRequests        GroupJoinRequest[]   @relation("JoinRequest")
+  department          Department?          @relation(fields: [departmentId], references: [id])
 
   @@map("users")
   @@schema("public")
@@ -399,6 +403,173 @@ enum EventType {
   CONSULTATION
   MEETING
   OTHER
+
+  @@schema("public")
+}
+
+model Supervisor {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facultyId          String?              @db.Uuid
+  name               String
+  email              String               @unique
+  department         String
+  expertise          String[]
+  currentThesis      Int                  @default(0)
+  currentInternship  Int                  @default(0)
+  maxThesisSlots     Int                  @default(5)
+  maxInternshipSlots Int                  @default(3)
+  bio                String?
+  phoneNumber        String?
+  office             String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  thesisSlots        ThesisSlot[]
+  internshipSlots    InternshipSlot[]
+  applications       StudentApplication[]
+  thesisGroups       ThesisGroup[]
+
+  @@map("supervisors")
+  @@schema("public")
+}
+
+model ThesisSlot {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supervisorId   String               @db.Uuid
+  title          String
+  description    String?
+  requiredSkills String[]
+  availableFrom  DateTime
+  availableTo    DateTime
+  isOpen         Boolean              @default(true)
+  applications   StudentApplication[]
+  thesisGroups   ThesisGroup[]
+  supervisor     Supervisor           @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([supervisorId])
+  @@index([isOpen])
+  @@map("thesis_slots")
+  @@schema("public")
+}
+
+model InternshipSlot {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supervisorId   String               @db.Uuid
+  title          String
+  description    String?
+  company        String
+  duration       String // e.g., "6 weeks", "3 months"
+  requiredSkills String[]
+  stipend        String?
+  availableFrom  DateTime
+  availableTo    DateTime
+  isOpen         Boolean              @default(true)
+  applications   StudentApplication[]
+  supervisor     Supervisor           @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([supervisorId])
+  @@index([isOpen])
+  @@map("internship_slots")
+  @@schema("public")
+}
+
+model StudentApplication {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId        String            @db.Uuid
+  supervisorId     String            @db.Uuid
+  thesisSlotId     String?           @db.Uuid
+  internshipSlotId String?           @db.Uuid
+  status           ApplicationStatus @default(PENDING)
+  appliedAt        DateTime          @default(now())
+  message          String?
+  resume           String? // URL to resume file
+  student          User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  supervisor       Supervisor        @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
+  thesisSlot       ThesisSlot?       @relation(fields: [thesisSlotId], references: [id], onDelete: SetNull)
+  internshipSlot   InternshipSlot?   @relation(fields: [internshipSlotId], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+  @@index([supervisorId])
+  @@index([status])
+  @@map("student_applications")
+  @@schema("public")
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+
+  @@schema("public")
+}
+
+model ThesisGroup {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creatorId    String             @db.Uuid
+  title        String
+  description  String?
+  thesisSlotId String?            @db.Uuid
+  supervisorId String?            @db.Uuid
+  maxMembers   Int                @default(5)
+  topic        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  creator      User               @relation("ThesisGroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  members      GroupMember[]
+  joinRequests GroupJoinRequest[]
+  thesisSlot   ThesisSlot?        @relation(fields: [thesisSlotId], references: [id], onDelete: SetNull)
+  supervisor   Supervisor?        @relation(fields: [supervisorId], references: [id], onDelete: SetNull)
+
+  @@index([creatorId])
+  @@index([thesisSlotId])
+  @@index([supervisorId])
+  @@map("thesis_groups")
+  @@schema("public")
+}
+
+model GroupMember {
+  id       String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId  String      @db.Uuid
+  userId   String      @db.Uuid
+  role     String      @default("MEMBER") // CREATOR, CO-LEAD, MEMBER
+  joinedAt DateTime    @default(now())
+  group    ThesisGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User        @relation("GroupMember", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_members")
+  @@schema("public")
+}
+
+model GroupJoinRequest {
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId     String            @db.Uuid
+  userId      String            @db.Uuid
+  status      JoinRequestStatus @default(PENDING) // PENDING, ACCEPTED, REJECTED
+  message     String?
+  requestedAt DateTime          @default(now())
+  respondedAt DateTime?
+  group       ThesisGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user        User              @relation("JoinRequest", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@index([status])
+  @@map("group_join_requests")
+  @@schema("public")
+}
+
+enum JoinRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 
   @@schema("public")
 }

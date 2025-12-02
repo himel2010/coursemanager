@@ -25,13 +25,31 @@ const UserDashboard = () => {
   return (
     <div className="w-full h-full p-5 flex flex-col justify gap-5">
       <ProfileHeader userProfile={userProfile} />
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={() => redirect("/course/chat")}
-      >
-        Go to Chat
-      </Button>
+      <div className="flex gap-3 flex-wrap">
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => redirect("/course/chat")}
+        >
+          Go to Chat
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => redirect("/thesis-groups")}
+          className="bg-purple-600 hover:bg-purple-700"
+        >
+          Thesis Groups
+        </Button>
+        {userProfile?.isFinalYear && (
+          <Button
+            size="sm"
+            onClick={() => redirect("/opportunities")}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            View Thesis & Internship Opportunities
+          </Button>
+        )}
+      </div>
       <CourseDisplay courses={courses} />
     </div>
   )
