@@ -1,10 +1,11 @@
 "use client"
 import { CourseDisplay } from "@/components/CourseDisplay"
+import MainCalendarView from "@/components/MainCalendarView"
 import ProfileHeader from "@/components/profile-header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+
 import { useAuth } from "@/lib/auth/AuthContext"
-import { Heart } from "lucide-react"
+
 import { redirect } from "next/navigation"
 import React, { useEffect, useState } from "react"
 
@@ -32,6 +33,7 @@ const UserDashboard = () => {
       >
         Go to Chat
       </Button>
+      <MainCalendarView />
       <CourseDisplay courses={courses} />
     </div>
   )
