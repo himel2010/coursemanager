@@ -1,5 +1,6 @@
 "use client"
 import { CourseDisplay } from "@/components/CourseDisplay"
+import { EventPageEditor } from "@/components/EventPageEditor"
 import MainCalendarView from "@/components/MainCalendarView"
 import ProfileHeader from "@/components/profile-header"
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,8 @@ const UserDashboard = () => {
       </Button>
       <MainCalendarView />
       <CourseDisplay courses={courses} />
+      <EventPageEditor />
+      <Button variant={"outline"}>asd</Button>
     </div>
   )
 }

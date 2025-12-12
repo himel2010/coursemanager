@@ -1,7 +1,7 @@
 /* @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Patrick+Hand&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Ubuntu+Sans:ital,wght@0,100..800;1,100..800&display=swap"); */
 @import "tailwindcss";
 @import "tw-animate-css";
-
+@source "../node_modules/@blocknote/shadcn";
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -16,6 +16,10 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-chart-7: var(--chart-7);
+
+  --color-chart-6: var(--chart-6);
+
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -93,6 +97,8 @@
   --chart-3: oklch(0.8497 0.0173 304.7638);
   --chart-4: oklch(0.9183 0.0216 143.2123);
   --chart-5: oklch(0.4713 0.0979 279.0881);
+  --chart-6: oklch(53.575% 0.0699 37.392);
+  --chart-7: oklch(52.695% 0.11271 333.566);
   --sidebar: oklch(0.9575 0.0045 314.8044);
   --sidebar-foreground: oklch(0.3537 0.0022 325.6227);
   --sidebar-primary: oklch(0.5481 0.0919 278.4668);

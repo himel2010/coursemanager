@@ -120,7 +120,6 @@ export default function SignUpComponent({ courseInfo }) {
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center p-4">
-      <Toaster position="bottom-right" />
       <form className="w-full max-w-2xl">
         <FieldSet>
           <FieldLegend>Profile</FieldLegend>

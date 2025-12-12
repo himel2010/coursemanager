@@ -19,6 +19,7 @@ model User {
   isFinalYear      Boolean?          @default(false)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime?         @updatedAt
+  pages            Page[]
   calendarEvents   CalendarEvent[]
   chatMessages     ChatMessage[]
   enrollments      Enrollment[]
@@ -127,6 +128,7 @@ model CourseOffered {
   projectGroups     ProjectGroup[]
   quizzes           Quiz[]
   resources         Resource[]
+  events            CalendarEvent[]
 
   @@unique([courseId, semesterId, section])
   @@index([semesterId])
@@ -259,18 +261,35 @@ model CalendarEvent {
   title           String
   description     String?
   eventType       EventType
+  pageId          String?   @unique @db.Uuid
+  page            Page?     @relation(fields: [pageId], references: [id], onDelete: SetNull)
   startTime       DateTime
   endTime         DateTime?
   location        String?
   reminderTime    DateTime?
   isImported      Boolean   @default(false)
-  courseOfferedId String?   @db.Uuid
+  courseOfferedId String    @db.Uuid
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  
   @@index([userId])
   @@map("calendar_events")
+  @@schema("public")
+}
+
+model Page {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content       Json
+  isPublished   Boolean        @default(true)
+  calendarEvent CalendarEvent? 
+  userId        String         @db.Uuid
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("pages")
   @@schema("public")
 }
 
