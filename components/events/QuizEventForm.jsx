@@ -77,26 +77,6 @@ const QuizEventForm = ({
   return (
     <FieldSet>
       <Field>
-        <FieldLabel htmlFor="name">Course</FieldLabel>
-        <Select
-          value={course}
-          onValueChange={(v) => {
-            setCourse(v)
-          }}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select Course" />
-          </SelectTrigger>
-          <SelectContent>
-            {courses?.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.course.code}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field>
         <FieldLabel htmlFor="username">Description</FieldLabel>
         <Input
           id="username"

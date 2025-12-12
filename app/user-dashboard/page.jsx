@@ -36,7 +36,6 @@ const UserDashboard = () => {
       </Button>
       <MainCalendarView />
       <CourseDisplay courses={courses} />
-      <EventPageEditor />
       <Button variant={"outline"}>asd</Button>
     </div>
   )

@@ -54,10 +54,14 @@ const CalendarEvent = ({ event }) => {
           </p>
         </div>
       </DialogTrigger>
-      <DialogContent className="w-[90vw] max-w-5xl h-[85vh] max-h-[85vh] flex flex-col py-4 px-6 overflow-hidden">
+      <DialogContent className="min-w-5xl h-[85vh] max-h-[85vh] flex flex-col py-4 px-6 overflow-hidden">
         <DialogTitle></DialogTitle>
         <div className="flex-1 overflow-auto">
-          <PopupEditor pageContent={event.page.pageContent} />
+          <PopupEditor
+            pageContent={event.page.pageContent}
+            pageProperties={event.page.pageProperties}
+            eventTitle={event?.title}
+          />
         </div>
       </DialogContent>
     </Dialog>

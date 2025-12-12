@@ -52,6 +52,8 @@ import { Spinner } from "../ui/spinner"
 import { toast } from "sonner"
 import QuizEventForm from "./QuizEventForm"
 import { Switch } from "../ui/switch"
+import AssignmentEventForm from "./AssignmentEventForm"
+
 const AddEventForm = ({ calendar }) => {
   const { user, courses } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -67,9 +69,13 @@ const AddEventForm = ({ calendar }) => {
   })
 
   const [description, setDescription] = useState("")
+
+  const [pageContent, setPageContent] = useState([])
+
   const [assignmentInfo, setAssignmentInfo] = useState({
-    pageContent: null,
-    
+    title: "Assignment",
+    pageContent: pageContent,
+    pageProperties: {},
   })
 
   const selectedDate = useCalendarStore((state) => state.selectedDate)
@@ -79,7 +85,6 @@ const AddEventForm = ({ calendar }) => {
   const addEvent = useCalendarStore((state) => state.addEvent)
 
   const handleSubmit = async () => {
-    console.log()
     try {
       setLoading(true)
       const response = await axios.post("/api/add-event", {
@@ -94,6 +99,7 @@ const AddEventForm = ({ calendar }) => {
               syllabus: form?.getValues("tags"),
               rubric: rubric,
             },
+            assignmentInfo,
           },
         },
       })
@@ -131,6 +137,26 @@ const AddEventForm = ({ calendar }) => {
           </TabsList>
         </Field>
         <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="name">Course</FieldLabel>
+            <Select
+              value={course}
+              onValueChange={(v) => {
+                setCourse(v)
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select Course" />
+              </SelectTrigger>
+              <SelectContent>
+                {courses?.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.course.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           <TabsContent value="QUIZ">
             <QuizEventForm
               course={course}
@@ -143,7 +169,20 @@ const AddEventForm = ({ calendar }) => {
               setRubric={setRubric}
             />
           </TabsContent>
-          <TabsContent value="ASSIGNMENT">{selectedEvent}</TabsContent>
+          <TabsContent value="ASSIGNMENT">
+            <AssignmentEventForm
+              course={course}
+              setCourse={setCourse}
+              courses={courses}
+              description={description}
+              setDescription={setDescription}
+              date={dayjs(selectedDate)}
+              pageContent={pageContent}
+              assignmentInfo={assignmentInfo}
+              setAssignmentInfo={setAssignmentInfo}
+              setPageContent={setPageContent}
+            />
+          </TabsContent>
         </FieldGroup>
       </Tabs>
       <Button type="button" onClick={handleSubmit} disabled={loading}>

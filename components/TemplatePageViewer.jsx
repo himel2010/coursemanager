@@ -11,17 +11,17 @@ import { eventType } from "@/lib/events/eventType"
 import { Separator } from "./ui/separator"
 import PagePropertyComponent from "./PagePropertyComponent"
 
-export default function PageViewer({
+export default function TemplatePageViewer({
   handleEventPage,
   pageType,
   pageProperties,
   pageContent,
-
   eventTitle = "Title",
+  setPageContent,
 }) {
   // Creates a new editor instance.
   const editor = useCreateBlockNote({
-    initialContent: pageContent ? pageContent : eventType[pageType],
+    initialContent: pageContent.length > 0 ? pageContent : eventType[pageType],
   })
   const { theme } = useTheme()
 
@@ -40,6 +40,7 @@ export default function PageViewer({
         editor={editor}
         shadCNComponents={ShadCNDefaultComponents}
         theme={theme}
+        onChange={() => setPageContent(editor.document)}
       />
     </div>
   )

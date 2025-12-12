@@ -524,3 +524,231 @@
     -3px 0px 0 0 oklch(from var(--primary) calc(l - 0.15) c h),
     4px 5px 10px rgba(0, 0, 0, 0.2);
 }
+/* COMPLETE BlockNote Theme Integration with ShadCN */
+.bn-container[data-color-scheme] {
+  /* ===== EDITOR COLORS ===== */
+  --bn-colors-editor-background: var(--background);
+  --bn-colors-editor-text: var(--foreground);
+
+  /* ===== MENU COLORS ===== */
+  --bn-colors-menu-background: var(--popover);
+  --bn-colors-menu-text: var(--popover-foreground);
+
+  /* ===== TOOLTIP COLORS ===== */
+  --bn-colors-tooltip-background: var(--popover);
+  --bn-colors-tooltip-text: var(--popover-foreground);
+
+  /* ===== HOVER STATES ===== */
+  --bn-colors-hovered-background: var(--accent);
+  --bn-colors-hovered-text: var(--accent-foreground);
+
+  /* ===== SELECTED STATES ===== */
+  --bn-colors-selected-background: var(--accent);
+  --bn-colors-selected-text: var(--accent-foreground);
+
+  /* ===== DISABLED STATES ===== */
+  --bn-colors-disabled-background: var(--muted);
+  --bn-colors-disabled-text: var(--muted-foreground);
+
+  /* ===== BORDER COLORS ===== */
+  --bn-colors-border: var(--border);
+
+  /* ===== SIDE MENU ===== */
+  --bn-colors-side-menu: var(--muted-foreground);
+
+  /* ===== HIGHLIGHTS - All color variations ===== */
+  --bn-colors-highlights-gray-background: var(--muted);
+  --bn-colors-highlights-gray-text: var(--muted-foreground);
+
+  --bn-colors-highlights-brown-background: var(--muted);
+  --bn-colors-highlights-brown-text: var(--foreground);
+
+  --bn-colors-highlights-red-background: var(--destructive) / 0.1;
+  --bn-colors-highlights-red-text: var(--destructive);
+
+  --bn-colors-highlights-orange-background: hsl(25 95% 53% / 0.1);
+  --bn-colors-highlights-orange-text: hsl(25 95% 53%);
+
+  --bn-colors-highlights-yellow-background: hsl(48 96% 53% / 0.1);
+  --bn-colors-highlights-yellow-text: hsl(48 96% 53%);
+
+  --bn-colors-highlights-green-background: hsl(142 76% 36% / 0.1);
+  --bn-colors-highlights-green-text: hsl(142 76% 36%);
+
+  --bn-colors-highlights-blue-background: hsl(var(--primary) / 0.1);
+  --bn-colors-highlights-blue-text: hsl(var(--primary));
+
+  --bn-colors-highlights-purple-background: hsl(280 65% 60% / 0.1);
+  --bn-colors-highlights-purple-text: hsl(280 65% 60%);
+
+  --bn-colors-highlights-pink-background: hsl(330 85% 60% / 0.1);
+  --bn-colors-highlights-pink-text: hsl(330 85% 60%);
+
+  /* ===== SHADOWS ===== */
+  --bn-colors-shadow: var(--foreground) / 0.1;
+  --bn-font-family: inherit;
+
+  /* ===== TYPOGRAPHY ===== */
+
+  /* ===== BORDER RADIUS ===== */
+  --bn-border-radius: calc(var(--radius) - 2px);
+}
+.bn-block-content[data-content-type] {
+  font-family: var(--font-sans);
+}
+
+/* ===== ADDITIONAL COMPONENT STYLING ===== */
+
+/* Make editor background transparent */
+
+/* Toolbar styling */
+.bn-toolbar {
+  background: var(--popover) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: calc(var(--radius) - 2px) !important;
+  box-shadow: 0 1px 3px 0 var(--foreground) / 0.1 !important;
+}
+
+/* Button styling */
+.bn-button {
+  color: var(--popover-foreground) !important;
+  border-radius: calc(var(--radius) - 4px) !important;
+}
+
+.bn-button:hover:not(:disabled) {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.bn-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bn-button[data-active="true"] {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* Dropdown/Select menus */
+.bn-dropdown {
+  background: var(--popover) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: calc(var(--radius) - 2px) !important;
+  box-shadow: 0 4px 6px -1px var(--foreground) / 0.1 !important;
+}
+
+.bn-dropdown-item {
+  color: var(--popover-foreground) !important;
+}
+
+.bn-dropdown-item:hover {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* Form fields (link editor, etc.) */
+.bn-form-input {
+  background: var(--background) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--foreground) !important;
+  border-radius: calc(var(--radius) - 4px) !important;
+}
+
+.bn-form-input:focus {
+  outline: none !important;
+  border-color: var(--ring) !important;
+  box-shadow: 0 0 0 3px var(--ring) / 0.5 !important;
+}
+
+/* Drag handle */
+.bn-drag-handle {
+  color: var(--muted-foreground) !important;
+}
+
+.bn-drag-handle:hover {
+  color: var(--foreground) !important;
+}
+
+/* Block side menu */
+.bn-side-menu {
+  color: var(--muted-foreground) !important;
+}
+
+/* Slash menu */
+.bn-slash-menu {
+  background: var(--popover) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: calc(var(--radius) - 2px) !important;
+  box-shadow: 0 4px 6px -1px var(--foreground) / 0.1 !important;
+}
+
+.bn-slash-menu-item {
+  color: var(--popover-foreground) !important;
+  border-radius: calc(var(--radius) - 4px) !important;
+}
+
+.bn-slash-menu-item:hover,
+.bn-slash-menu-item[data-selected="true"] {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.bn-slash-menu-item-title {
+  color: var(--popover-foreground) !important;
+}
+
+.bn-slash-menu-item-description {
+  color: var(--muted-foreground) !important;
+}
+
+/* Table styling */
+.bn-block-content[data-content-type="table"] {
+  border-color: var(--border) !important;
+}
+
+.bn-table-cell {
+  border-color: var(--border) !important;
+}
+
+/* Code blocks */
+.bn-block-content[data-content-type="codeBlock"] {
+  background: var(--accent) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: calc(var(--radius) - 2px) !important;
+  color: var(--foreground) !important;
+}
+
+/* Inline code */
+.bn-inline-content[data-content-type="codeBlock"] {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
+  border-radius: calc(var(--radius) - 4px) !important;
+  padding: 0.125rem 0.25rem;
+}
+
+/* Links */
+.bn-inline-content[data-content-type="link"] {
+  color: var(--primary) !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.bn-inline-content[data-content-type="link"]:hover {
+  opacity: 0.8;
+}
+
+/* Placeholder text */
+.bn-block-content[data-is-empty="true"]::before {
+  color: var(--muted-foreground) !important;
+}
+
+/* Selection styling */
+.bn-block-content::selection {
+  background: var(--primary) / 0.2 !important;
+}
+
+.bn-container[data-color-scheme] .bn-editor-content,
+.bn-container[data-color-scheme] .bn-content {
+  font-family: var(--font-ubuntu-sans) !important;
+}

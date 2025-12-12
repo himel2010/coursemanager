@@ -2,4 +2,8 @@
 
 import dynamic from "next/dynamic"
 
-export const EventPageEditor = dynamic((handleEventPage, Type, ) => import("./PageViewer"), { ssr: false })
+export const EventPageEditor = dynamic(
+  (handleEventPage, pageType, pageProperties, pageContent) =>
+    import("./PageViewer"),
+  { ssr: false }
+)
