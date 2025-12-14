@@ -19,7 +19,33 @@ import { cn } from "@/lib/utils"
 import Logo from "@/components/shadcn-studio/logo"
 import SignOutButton from "@/components/SignOutButton"
 
-const Header = ({ navigationData, className }) => {
+const Header = ({ className }) => {
+  const navigationData = [
+    {
+      title: "Home",
+      href: "/",
+    },
+    {
+      title: "Dashboard",
+      href: "/user-dashboard",
+    },
+    {
+      title: "Community",
+      href: "#community",
+    },
+    {
+      title: "Thesis Groups",
+      href: "/thesis-groups",
+    },
+    {
+      title: "Opportunities",
+      href: "/opportunities",
+    },
+    {
+      title: "Admin",
+      href: "/admin",
+    },
+  ]
   return (
     <header
       className={cn("bg-background sticky top-0 z-50 h-16 border-b", className)}

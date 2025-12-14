@@ -69,7 +69,10 @@ export default function SignUpComponent({ courseInfo }) {
   }
 
   const handleCourseAdd = (code, sec) => {
-    if (courses.length >= 5) return
+    if (courses.length >= 5) {
+      toast.error("You cannot take more than 5 courses")
+      return
+    }
 
     const exists = courseExists(code)
 
@@ -117,7 +120,6 @@ export default function SignUpComponent({ courseInfo }) {
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center p-4">
-      <Toaster position="bottom-right" />
       <form className="w-full max-w-2xl">
         <FieldSet>
           <FieldLegend>Profile</FieldLegend>
