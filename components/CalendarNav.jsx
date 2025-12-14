@@ -53,8 +53,11 @@ const CalendarNav = ({ upcoming }) => {
   return (
     <div className="p-2 flex justify-end px-5 items-center">
       {upcoming ? (
-        <div className="font-medium text-xl text-muted-foreground">
-          This Week
+        <div className="font-medium text-xl flex justify-between w-full text-muted-foreground">
+          {currentView === "WEEK"
+            ? `${weekStart.format("MMM D")} - ${weekEnd.format("MMM D, YYYY")}`
+            : dayjs().month(monthIdx).format("MMMM YYYY")}
+          <span>This Week</span>
         </div>
       ) : (
         <div className="min-w-full flex justify-between items-center">
