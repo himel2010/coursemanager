@@ -16,6 +16,7 @@ export default function PageViewer({
   pageType,
   pageProperties,
   pageContent,
+  editable,
 
   eventTitle = "Title",
 }) {
@@ -40,6 +41,7 @@ export default function PageViewer({
         editor={editor}
         shadCNComponents={ShadCNDefaultComponents}
         theme={theme}
+        editable={editable}
       />
     </div>
   )

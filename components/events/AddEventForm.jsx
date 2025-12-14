@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/popover"
 
 import { Input } from "../ui/input"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import dayjs from "dayjs"
 import { useAuth } from "@/lib/auth/AuthContext"
 import axios from "axios"
@@ -57,6 +57,8 @@ import AssignmentEventForm from "./AssignmentEventForm"
 const AddEventForm = ({ calendar }) => {
   const { user, courses } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [includeTime, setIncludeTime] = useState(false)
+
   const [rubric, setRubric] = useState({
     totalMarks: 15,
     items: [{ id: 1, name: "Question 1", marks: 15 }],
@@ -87,12 +89,14 @@ const AddEventForm = ({ calendar }) => {
   const handleSubmit = async () => {
     try {
       setLoading(true)
+      console.log("Saving this time", selectedDate.toISOString())
       const response = await axios.post("/api/add-event", {
         data: {
           course: course,
           description: description,
           eventType: selectedEvent,
           startedAt: selectedDate.toISOString(),
+          includeTime: includeTime,
           userId: user.id,
           eventInfo: {
             quiz: {
@@ -125,6 +129,8 @@ const AddEventForm = ({ calendar }) => {
         <Calendar24
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
+          includeTime={includeTime}
+          setIncludeTime={setIncludeTime}
         />
       </Field>
       <Tabs defaultValue="QUIZ" className="w-full" onValueChange={handleChange}>
@@ -194,10 +200,26 @@ const AddEventForm = ({ calendar }) => {
 
 export default AddEventForm
 
-function Calendar24({ selectedDate, setSelectedDate }) {
+function Calendar24({
+  selectedDate,
+  setSelectedDate,
+  includeTime,
+  setIncludeTime,
+}) {
   const [open, setOpen] = useState(false)
-  const [includeTime, setIncludeTime] = useState(false)
   const [time, setTime] = useState("10:30:00")
+
+  // NEW: Sync time input when selectedDate changes from external source (week view click)
+  useEffect(() => {
+    if (
+      selectedDate &&
+      (selectedDate.hour() !== 0 || selectedDate.minute() !== 0)
+    ) {
+      setTime(selectedDate.format("HH:mm:ss"))
+      setIncludeTime(true) // Auto-enable time if non-midnight hour is selected
+    }
+  }, [selectedDate.format("YYYY-MM-DD HH:mm")]) // Only trigger when date or time changes
+
   const handleTimeChange = (newTime) => {
     setTime(newTime)
     if (selectedDate && includeTime) {
@@ -208,6 +230,24 @@ function Calendar24({ selectedDate, setSelectedDate }) {
       setSelectedDate(updatedDate)
     }
   }
+
+  useEffect(() => {
+    console.log("Setting Current Time")
+    if (selectedDate) {
+      if (includeTime && time) {
+        // When enabling time, apply the current time value
+        const [hours, minutes] = time.split(":")
+        const updatedDate = selectedDate
+          .hour(parseInt(hours))
+          .minute(parseInt(minutes))
+        setSelectedDate(updatedDate)
+      } else if (!includeTime) {
+        // When disabling time, reset to start of day
+        setSelectedDate(selectedDate.startOf("day"))
+      }
+    }
+  }, [includeTime])
+
   const handleDateChange = (date) => {
     if (!date) {
       setSelectedDate(undefined)
@@ -215,7 +255,7 @@ function Calendar24({ selectedDate, setSelectedDate }) {
     }
 
     let newDate = dayjs(date)
-    if (includeTime && time) {
+    if (includeTime) {
       const [hours, minutes] = time.split(":")
       newDate = newDate.hour(parseInt(hours)).minute(parseInt(minutes))
     } else {
@@ -289,31 +329,6 @@ function Calendar24({ selectedDate, setSelectedDate }) {
           onCheckedChange={setIncludeTime}
         />
       </div>
-
-      {/* Reminder Options */}
-      {/* <div className="space-y-2">
-        <Label className="text-sm font-medium flex items-center gap-2">
-          <Bell className="h-4 w-4" />
-          Reminder
-        </Label>
-        <Select
-          value={reminder?.toString() || "none"}
-          onValueChange={(v) => setReminder(v === "none" ? null : parseInt(v))}
-        >
-          <SelectTrigger className="w-full h-9 text-sm">
-            <SelectValue placeholder="No reminder" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No reminder</SelectItem>
-            <SelectItem value="0">At time of event</SelectItem>
-            <SelectItem value="15">15 minutes before</SelectItem>
-            <SelectItem value="30">30 minutes before</SelectItem>
-            <SelectItem value="60">1 hour before</SelectItem>
-            <SelectItem value="1440">1 day before</SelectItem>
-            <SelectItem value="10080">1 week before</SelectItem>
-          </SelectContent>
-        </Select>
-      </div> */}
     </div>
   )
 }

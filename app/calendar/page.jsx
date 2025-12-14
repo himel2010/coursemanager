@@ -1,14 +1,15 @@
-import React from "react"
-import UserDashboard from "./UserDashboard"
+import MainCalendarView from "@/components/MainCalendarView"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { UserSidebar } from "@/components/UserSidebar"
+import React from "react"
+
 const page = () => {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <UserSidebar />
-      <main className="w-full p-2">
-        <SidebarTrigger />
-        <UserDashboard />
+      <main className="w-full">
+        <SidebarTrigger collapsed={true} />
+        <MainCalendarView />
       </main>
     </SidebarProvider>
   )

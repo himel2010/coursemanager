@@ -4,7 +4,17 @@ import { NextResponse } from "next/server"
 
 export async function POST(request) {
   const { data } = await request.json()
-  const { course, description, eventType, startedAt, userId, eventInfo } = data
+  console.log("received", data)
+  const {
+    course,
+    description,
+    eventType,
+    startedAt,
+    includeTime,
+    userId,
+    eventInfo,
+  } = data
+  console.log(eventType, includeTime)
   const syllabus = eventInfo.quiz.syllabus
   if (eventType === "ASSIGNMENT") {
     const response = await storeAssignment(
@@ -13,7 +23,8 @@ export async function POST(request) {
       eventType,
       startedAt,
       userId,
-      eventInfo
+      eventInfo,
+      includeTime
     )
     const formattedResponse = formatResponse(response)
 
@@ -22,6 +33,7 @@ export async function POST(request) {
     const page = createQuizPage({ syllabus, description })
     console.log(data)
     try {
+      console.log("API a quiz time", startedAt)
       const response = await prisma.page.create({
         data: {
           content: { type: eventType.toUpperCase(), pageContent: page },
@@ -34,6 +46,7 @@ export async function POST(request) {
               userId,
               description,
               startTime: startedAt,
+              includeTime: includeTime,
               eventType: eventType.toUpperCase(),
             },
           },
@@ -49,6 +62,7 @@ export async function POST(request) {
               title: true,
               eventType: true,
               startTime: true,
+              includeTime: true,
               reminderTime: true,
               courseOffered: {
                 include: {
@@ -84,6 +98,7 @@ function formatResponse(response) {
     title: response.calendarEvent.title,
     type: response.calendarEvent.eventType,
     date: response.calendarEvent.startTime,
+    includeTime: response.calendarEvent.includeTime,
     reminders: response.calendarEvent.reminderTime,
     owner: response.userId,
     published: response.isPublished,
@@ -106,9 +121,11 @@ async function storeAssignment(
   eventType,
   startedAt,
   userId,
-  eventInfo
+  eventInfo,
+  includeTime
 ) {
   try {
+    console.log("API a time", startedAt)
     const response = await prisma.page.create({
       data: {
         content: {
@@ -125,6 +142,7 @@ async function storeAssignment(
             userId,
             description,
             startTime: startedAt,
+            includeTime: includeTime,
             eventType: eventType.toUpperCase(),
           },
         },
@@ -140,6 +158,7 @@ async function storeAssignment(
             title: true,
             eventType: true,
             startTime: true,
+            includeTime: true,
             reminderTime: true,
             courseOffered: {
               include: {

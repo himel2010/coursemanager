@@ -8,30 +8,40 @@ import MonthView from "./MonthView"
 import dayjs from "dayjs"
 import CalendarViewSidebar from "./CalendarViewSidebar"
 import axios from "axios"
-import { toast } from "sonner"
-import { useCalendarStore } from "@/lib/store"
-import { Button } from "./ui/button"
 
-const MainCalendarView = () => {
+import { useCalendarStore } from "@/lib/store"
+
+import { formatCourses } from "@/lib/events/classEvents"
+import CalendarNav from "./CalendarNav"
+import WeekView from "./WeekView"
+import { ScrollArea } from "./ui/scroll-area"
+import UpcomingView from "./UpcomingView"
+import { useAuth } from "@/lib/auth/AuthContext"
+
+const MainCalendarView = ({ upcoming }) => {
   const month = getMonth()
   const events = useCalendarStore((state) => state.events)
   const setEvents = useCalendarStore((state) => state.setEvents)
+  const currentView = useCalendarStore((state) => state.currentView)
+  const { user, courses } = useAuth()
 
   const calendar = useCalendarStore()
 
   useEffect(() => {
-    const getEvents = async () => {
+    const initializeEvents = async () => {
+      const allNewEvents = []
+
+      // Get API events
       try {
         const response = await axios.get("/api/get-calendar-events")
-        console.log("Response ", response)
         if (response) {
-          console.log("setting response")
-
-          const newEvents = response.data.map((e) => ({
+          console.log("response", response)
+          const apiEvents = response.data.map((e) => ({
             id: e.id,
             title: e.title,
             type: e.eventType,
             date: dayjs(e.startTime),
+            includeTime: e.includeTime,
             reminders: e?.reminderTime,
             owner: e.page.userId,
             published: true,
@@ -48,40 +58,56 @@ const MainCalendarView = () => {
             courseCode: e.courseOffered.course.code,
             courseSection: e.courseOffered.section,
           }))
-
-          // Set it once
-          setEvents(newEvents)
+          allNewEvents.push(...apiEvents)
         }
-        console.log(events)
       } catch (error) {
         console.log(error)
       }
+
+      // Add class events
+      if (courses && courses.length > 0) {
+        const classes = formatCourses(courses)
+        const classEvent = {
+          id: "class",
+          type: "class",
+          classes,
+        }
+        allNewEvents.push(classEvent)
+      }
+
+      // Set all events at once
+      setEvents(allNewEvents)
     }
-    getEvents()
-  }, [])
+
+    initializeEvents()
+  }, [courses]) // Depend on courses so it runs when courses are available
 
   return (
-    <div className="w-full border-2 flex overflow-hidden">
+    <div
+      className={
+        upcoming
+          ? "w-full max-w-6xl flex justify-center items-center"
+          : `w-full h-[90vh] border-2 flex overflow-hidden`
+      }
+    >
       {/* Weekday Headers */}
 
       <div className="w-full h-full overflow-y-auto">
-        <div className="grid grid-cols-7 gap-2 mb-2">
-          {month[0].map((day, i) => (
-            <div
-              key={i}
-              className="text-center text-sm font-semibold text-muted-foreground py-2"
-            >
-              {day.format("ddd")}
-            </div>
-          ))}
-        </div>
-        <Separator />
+        <CalendarNav upcoming={upcoming} />
         {/* Calendar Grid - Weeks (Rows) */}
-        <MonthView month={month} events={events} />
+        {upcoming ? (
+          <UpcomingView events={events} />
+        ) : currentView === "MONTH" ? (
+          <MonthView month={month} events={events} />
+        ) : (
+          <WeekView events={events} />
+        )}
       </div>
-      <div className="hidden lg:block w-full max-w-sm flex-shrink-0 overflow-hidden">
-        <CalendarViewSidebar calendar={calendar} />
-      </div>
+      {!upcoming && (
+        <ScrollArea className="h-full w-full max-w-sm">
+          <CalendarViewSidebar calendar={calendar} />
+        </ScrollArea>
+      )}
     </div>
   )
 }

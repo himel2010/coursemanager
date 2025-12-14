@@ -57,7 +57,7 @@ export function AuthProvider({ children }) {
   const fetchUserProfile = async (userId) => {
     try {
       const response = await axios.get(`/api/user/${userId}`)
-      console.log(response.data)
+      console.log("user got", response.data)
 
       setUserProfile(response.data)
     } catch (error) {
