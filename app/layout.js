@@ -3,6 +3,7 @@ import "./globals.css"
 import { AuthProvider } from "@/lib/auth/AuthContext"
 import { ThemeProvider } from "@/components/theme-provider.jsx"
 import { Patrick_Hand } from "next/font/google"
+import { Toaster } from "sonner"
 
 export const metadata = {
   title: "Create Next App",
@@ -38,7 +39,10 @@ export default function RootLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <Toaster position="bottom-right" />
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
