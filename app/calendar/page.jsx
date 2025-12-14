@@ -8,7 +8,7 @@ const page = () => {
     <SidebarProvider defaultOpen={false}>
       <UserSidebar />
       <main className="w-full">
-        <SidebarTrigger collapsed={true} />
+        <SidebarTrigger />
         <MainCalendarView />
       </main>
     </SidebarProvider>

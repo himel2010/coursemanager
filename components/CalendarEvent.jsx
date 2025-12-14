@@ -21,17 +21,17 @@ const CalendarEvent = ({ event, type }) => {
     <Dialog>
       <DialogTrigger className="flex-1 w-full">
         <div
-          className={`${colors.bg} ${colors.border} rounded-md flex-1 text-xs text-foreground px-2 flex flex-row flex-wrap justify-start items-center border-l-5 transition-all hover:scale-[1.02] hover:cursor-pointer`}
+          className={`${colors.bg} ${colors.border} rounded-md flex-1  text-xs text-foreground px-2 flex flex-row  justify-start items-center border-l-5 transition-all hover:scale-[1.02] hover:cursor-pointer`}
         >
-          <p className="font-light text-[0.6rem] ">{event.courseCode}</p>
-          <div className="flex flex-row justify-between items-center w-full">
+          <div className="flex flex-col items-start w-full justify-center">
+            <p className="font-light text-[0.6rem] ">{event.courseCode}</p>
             <strong className="font-bold">{event.title}</strong>
-            {event?.includeTime && (
-              <div className="text-[0.6rem] flex items-center min-h-full ">
-                {event?.date?.format("hh:mm A")}
-              </div>
-            )}
           </div>
+          {event?.includeTime && (
+            <div className="text-[0.6rem] items-center min-h-full ">
+              {event?.date?.format("hh:mm A")}
+            </div>
+          )}
         </div>
       </DialogTrigger>
       {type != "class" && (

@@ -34,7 +34,7 @@ const QuizEventForm = ({
       ...prev,
       items: prev.items.map((item) =>
         item.id === id
-          ? { ...item, [field]: field === "marks" ? Number(value) : value }
+          ? { ...item, [field]: field === "mark" ? Number(value) : value }
           : item
       ),
     }))
@@ -47,8 +47,8 @@ const QuizEventForm = ({
     setRubric((prev) => ({
       totalMarks: prev.totalMarks,
       items: [
-        ...prev.items.map((item) => ({ ...item, marks: marksPerQuestion })),
-        { id: newId, name: `Question ${newId}`, marks: marksPerQuestion },
+        ...prev.items.map((item) => ({ ...item, mark: marksPerQuestion })),
+        { id: newId, item: `Question ${newId}`, mark: marksPerQuestion },
       ],
     }))
   }
@@ -61,7 +61,7 @@ const QuizEventForm = ({
       totalMarks: rubric.totalMarks,
       items: remainingItems.map((item) => ({
         ...item,
-        marks: marksPerQuestion,
+        mark: marksPerQuestion,
       })),
     })
   }
@@ -71,7 +71,7 @@ const QuizEventForm = ({
 
     setRubric({
       totalMarks: Number(newTotal),
-      items: rubric.items.map((item) => ({ ...item, marks: marksPerQuestion })),
+      items: rubric.items.map((item) => ({ ...item, mark: marksPerQuestion })),
     })
   }
   return (
@@ -129,17 +129,17 @@ const QuizEventForm = ({
               >
                 <Input
                   placeholder="Item name"
-                  value={item.name}
+                  value={item.item}
                   onChange={(e) =>
-                    updateRubricItem(item.id, "name", e.target.value)
+                    updateRubricItem(item.id, "item", e.target.value)
                   }
                 />
                 <Input
                   type="number"
                   placeholder="Marks"
-                  value={item.marks}
+                  value={item.mark}
                   onChange={(e) =>
-                    updateRubricItem(item.id, "marks", e.target.value)
+                    updateRubricItem(item.id, "mark", e.target.value)
                   }
                 />
                 <Minus
@@ -152,11 +152,11 @@ const QuizEventForm = ({
 
         {/* Validation message */}
         {Math.abs(
-          rubric.items.reduce((sum, item) => sum + item.marks, 0) -
+          rubric.items.reduce((sum, item) => sum + item.mark, 0) -
             rubric.totalMarks
         ) > 0.01 && (
           <p className="text-sm text-destructive mt-2">
-            Warning: Items don't sum to total marks
+            Warning: Items don't sum to total mark
           </p>
         )}
       </Field>

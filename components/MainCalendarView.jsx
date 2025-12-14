@@ -19,7 +19,7 @@ import UpcomingView from "./UpcomingView"
 import { useAuth } from "@/lib/auth/AuthContext"
 
 const MainCalendarView = ({ upcoming }) => {
-  const month = getMonth()
+  const month = useCalendarStore((state) => state.month)
   const events = useCalendarStore((state) => state.events)
   const setEvents = useCalendarStore((state) => state.setEvents)
   const currentView = useCalendarStore((state) => state.currentView)
@@ -104,7 +104,7 @@ const MainCalendarView = ({ upcoming }) => {
         )}
       </div>
       {!upcoming && (
-        <ScrollArea className="h-full w-full max-w-sm">
+        <ScrollArea className="h-full w-full max-w-md">
           <CalendarViewSidebar calendar={calendar} />
         </ScrollArea>
       )}

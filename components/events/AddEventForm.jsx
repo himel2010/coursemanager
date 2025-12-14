@@ -61,7 +61,7 @@ const AddEventForm = ({ calendar }) => {
 
   const [rubric, setRubric] = useState({
     totalMarks: 15,
-    items: [{ id: 1, name: "Question 1", marks: 15 }],
+    items: [{ id: 1, item: "Question 1", mark: 15 }],
   })
   const [course, setCourse] = useState("")
   const form = useForm({
@@ -87,6 +87,24 @@ const AddEventForm = ({ calendar }) => {
   const addEvent = useCalendarStore((state) => state.addEvent)
 
   const handleSubmit = async () => {
+    if (course === "") {
+      toast.error("Please select a course")
+      return
+    }
+
+    if (selectedEvent === "QUIZ" && form?.getValues("tags").length === 0) {
+      toast.error("Must add syllabus")
+      return
+    }
+
+    if (
+      selectedEvent === "ASSIGNMENT" &&
+      assignmentInfo.pageContent.length === 0
+    ) {
+      toast.error("Must create an assignment page")
+      return
+    }
+
     try {
       setLoading(true)
       console.log("Saving this time", selectedDate.toISOString())
@@ -124,7 +142,6 @@ const AddEventForm = ({ calendar }) => {
 
   return (
     <FieldSet>
-      <FieldLegend>Add Event</FieldLegend>
       <Field>
         <Calendar24
           selectedDate={selectedDate}
@@ -208,11 +225,13 @@ function Calendar24({
 }) {
   const [open, setOpen] = useState(false)
   const [time, setTime] = useState("10:30:00")
+  const currentView = useCalendarStore((s) => s.currentView)
 
   // NEW: Sync time input when selectedDate changes from external source (week view click)
   useEffect(() => {
     if (
       selectedDate &&
+      currentView === "WEEK" &&
       (selectedDate.hour() !== 0 || selectedDate.minute() !== 0)
     ) {
       setTime(selectedDate.format("HH:mm:ss"))

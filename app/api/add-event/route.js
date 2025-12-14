@@ -16,6 +16,7 @@ export async function POST(request) {
   } = data
   console.log(eventType, includeTime)
   const syllabus = eventInfo.quiz.syllabus
+  const rubric = eventInfo.quiz.rubric.items
   if (eventType === "ASSIGNMENT") {
     const response = await storeAssignment(
       course,
@@ -30,7 +31,7 @@ export async function POST(request) {
 
     return NextResponse.json(formattedResponse)
   } else {
-    const page = createQuizPage({ syllabus, description })
+    const page = createQuizPage({ syllabus, description, rubric })
     console.log(data)
     try {
       console.log("API a quiz time", startedAt)
