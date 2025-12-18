@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import Header from "@/components/shadcn-studio/blocks/hero-section-01/header"
 import { Button } from "@/components/ui/button"
@@ -79,6 +79,9 @@ export default function ChannelsPage() {
   const [editDesc, setEditDesc] = useState("")
   const [selectedUserForDM, setSelectedUserForDM] = useState(null)
   const [showUserProfile, setShowUserProfile] = useState(false)
+  const [workspaces, setWorkspaces] = useState([])
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(null)
+  const [courses, setCourses] = useState([])
   const fileInputRef = useRef(null)
   const scrollAreaRef = useRef(null)
 
