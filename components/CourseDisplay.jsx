@@ -23,8 +23,10 @@ export function CourseDisplay({ courses }) {
             theoryFaculty,
             labFaculty1,
             labFaculty2,
-            classSchedule: { theory, lab },
+            classSchedule,
           } = course
+          const theory = classSchedule?.theory || {}
+          const lab = classSchedule?.lab || {}
           return (
             <div key={idx}>
               {" "}

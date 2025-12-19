@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import Header from "@/components/shadcn-studio/blocks/hero-section-01/header"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,14 @@ const navigationData = [
   {
     title: "Dashboard",
     href: "/user-dashboard",
+  },
+  {
+    title: "Thesis Groups",
+    href: "/thesis-groups",
+  },
+  {
+    title: "Opportunities",
+    href: "/opportunities",
   },
   {
     title: "Admin",
@@ -79,6 +87,9 @@ export default function ChannelsPage() {
   const [editDesc, setEditDesc] = useState("")
   const [selectedUserForDM, setSelectedUserForDM] = useState(null)
   const [showUserProfile, setShowUserProfile] = useState(false)
+  const [workspaces, setWorkspaces] = useState([])
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(null)
+  const [courses, setCourses] = useState([])
   const fileInputRef = useRef(null)
   const scrollAreaRef = useRef(null)
 
@@ -122,6 +133,7 @@ export default function ChannelsPage() {
     const updatedMessages = { ...messages }
     delete updatedMessages[channelId]
     setMessages(updatedMessages)
+    persistChannelsForWorkspace(selectedWorkspaceId, updatedChannels, updatedMessages)
     if (selectedChannelId === channelId) {
       setSelectedChannelId(updatedChannels[0]?.id || null)
     }
@@ -177,6 +189,69 @@ export default function ChannelsPage() {
     setSelectedUserForDM(user)
     setShowUserProfile(true)
   }
+
+  // Persistence helpers: store channels per workspace in localStorage
+  const workspaceStorageKey = (workspaceId) => `channels:${workspaceId}`
+
+  const persistChannelsForWorkspace = (workspaceId, channelList, msgs = null) => {
+    if (!workspaceId) return
+    try {
+      const payload = { channels: channelList, messages: msgs || messages }
+      localStorage.setItem(workspaceStorageKey(workspaceId), JSON.stringify(payload))
+    } catch (e) {
+      console.warn('Failed to persist channels', e)
+    }
+  }
+
+  const loadChannelsForWorkspace = (workspaceId) => {
+    if (!workspaceId) return null
+    try {
+      const raw = localStorage.getItem(workspaceStorageKey(workspaceId))
+      if (!raw) return null
+      return JSON.parse(raw)
+    } catch (e) {
+      console.warn('Failed to parse workspace channels', e)
+      return null
+    }
+  }
+
+  useEffect(() => {
+    // Use user's enrolled courses as workspaces
+    if (courses && courses.length > 0) {
+      const enrolledWorkspaces = courses.map((co) => ({
+        id: co.id,
+        courseCode: co.course.code,
+        section: co.section,
+        semesterSeason: co.semester.season,
+        semesterYear: co.semester.year,
+      }))
+      setWorkspaces(enrolledWorkspaces)
+      const first = enrolledWorkspaces[0]
+      if (first) setSelectedWorkspaceId(first.id)
+    }
+  }, [courses])
+
+  useEffect(() => {
+    if (!selectedWorkspaceId) return
+    const saved = loadChannelsForWorkspace(selectedWorkspaceId)
+    if (saved && saved.channels) {
+      setChannels(saved.channels)
+      setMessages(saved.messages || {})
+      setSelectedChannelId(saved.channels[0]?.id || null)
+      return
+    }
+
+    // initialize default channels for new workspace
+    const defaultChannels = [
+      { id: 1, name: 'general', description: 'General discussion' },
+      { id: 2, name: 'announcements', description: 'Important announcements' },
+      { id: 3, name: 'random', description: 'Off-topic conversations' },
+    ]
+    setChannels(defaultChannels)
+    setMessages({ 1: [ { id: 1, author: 'You', userId: 'current-user', avatar: 'YU', content: 'Welcome to general!', timestamp: new Date(Date.now() - 3600000), type: 'text' } ], 2: [], 3: [] })
+    setSelectedChannelId(defaultChannels[0].id)
+    persistChannelsForWorkspace(selectedWorkspaceId, defaultChannels)
+  }, [selectedWorkspaceId])
 
   const getStatusColor = (status) => {
     switch (status) {
