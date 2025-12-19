@@ -8,6 +8,14 @@ const navigationData = [
     href: "/user-dashboard",
   },
   {
+    title: "Thesis Groups",
+    href: "/thesis-groups",
+  },
+  {
+    title: "Opportunities",
+    href: "/opportunities",
+  },
+  {
     title: "Community",
     href: "#community",
   },
