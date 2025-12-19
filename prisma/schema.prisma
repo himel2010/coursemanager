@@ -10,29 +10,25 @@ datasource db {
 }
 
 model User {
-  id                  String               @id @db.Uuid
-  email               String               @unique
-  name                String?
-  role                UserRole?            @default(STUDENT)
-  studentId           String?              @unique
-  departmentId        String?              @db.Uuid
-  isFinalYear         Boolean?             @default(false)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime?            @updatedAt
-  calendarEvents      CalendarEvent[]
-  chatMessages        ChatMessage[]
-  enrollments         Enrollment[]
-  forumComments       ForumComment[]
-  forumPosts          ForumPost[]
-  groupMemberships    GroupMembership[]
-  notes               Note[]
-  quizAttempts        QuizAttempt[]
-  uploads             Upload[]
-  applications        StudentApplication[]
-  thesisGroupsCreated ThesisGroup[]        @relation("ThesisGroupCreator")
-  groupMembers        GroupMember[]        @relation("GroupMember")
-  joinRequests        GroupJoinRequest[]   @relation("JoinRequest")
-  department          Department?          @relation(fields: [departmentId], references: [id])
+  id               String            @id @db.Uuid
+  email            String            @unique
+  name             String?
+  role             UserRole?         @default(STUDENT)
+  studentId        String?           @unique
+  departmentId     String?           @db.Uuid
+  isFinalYear      Boolean?          @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime?         @updatedAt
+  calendarEvents   CalendarEvent[]
+  chatMessages     ChatMessage[]
+  enrollments      Enrollment[]
+  forumComments    ForumComment[]
+  forumPosts       ForumPost[]
+  groupMemberships GroupMembership[]
+  notes            Note[]
+  quizAttempts     QuizAttempt[]
+  uploads          Upload[]
+  department       Department?       @relation(fields: [departmentId], references: [id])
 
   @@map("users")
   @@schema("public")
@@ -131,6 +127,7 @@ model CourseOffered {
   projectGroups     ProjectGroup[]
   quizzes           Quiz[]
   resources         Resource[]
+  events            CalendarEvent[]
 
   @@unique([courseId, semesterId, section])
   @@index([semesterId])
@@ -263,18 +260,41 @@ model CalendarEvent {
   title           String
   description     String?
   eventType       EventType
+  pageId          String?   @unique @db.Uuid
+  page            Page?     @relation(fields: [pageId], references: [id], onDelete: SetNull)
   startTime       DateTime
+  includeTime     Boolean?  @default(false)
   endTime         DateTime?
   location        String?
   reminderTime    DateTime?
+  group           Boolean?   @default(false)
   isImported      Boolean   @default(false)
-  courseOfferedId String?   @db.Uuid
+  courseOfferedId String    @db.Uuid
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  
   @@index([userId])
+  @@index([courseOfferedId])
+  @@index([startTime])
+  @@index([userId, startTime]) // For user's events ordered by time
+  @@index([courseOfferedId, startTime]) // For course events ordered by time
   @@map("calendar_events")
+  @@schema("public")
+}
+
+model Page {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content       Json
+  isPublished   Boolean        @default(true)
+  calendarEvent CalendarEvent? 
+  userId        String         @db.Uuid
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("pages")
   @@schema("public")
 }
 
