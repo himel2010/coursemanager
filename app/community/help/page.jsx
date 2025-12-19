@@ -42,6 +42,7 @@ export default function HelpPage() {
         const parsed = saved ? JSON.parse(saved) : []
         const normalized = parsed.map((p) => ({
             ...p,
+            isResolved: p.isResolved || false,
             comments: Array.isArray(p.comments)
                 ? p.comments.map((c) => ({
                     id: c.id ?? Date.now(),
@@ -71,6 +72,7 @@ export default function HelpPage() {
                 title: p.title,
                 body: p.content,
                 createdAt: p.createdAt,
+                isResolved: p.isResolved,
                 author: p.author,
                 comments: (p.comments || []).map((c) => ({ id: c.id, text: c.content ?? c.text ?? "", createdAt: c.createdAt, author: c.author }))
             }))
@@ -146,6 +148,7 @@ export default function HelpPage() {
             course: null,
             title: title.trim(),
             body: body.trim(),
+            isResolved: false,
             createdAt: new Date().toISOString(),
             comments: []
         }
@@ -221,6 +224,44 @@ export default function HelpPage() {
         setPosts(updated)
         savePosts(updated)
         setCommentTexts({ ...commentTexts, [postId]: "" }) // Clear input
+    }
+
+    const handleResolve = async (postId) => {
+        if (!user) {
+            setError("Please sign in")
+            return
+        }
+
+        if (scope === "course") {
+            try {
+                setLoading(true)
+                setError(null)
+                const res = await fetch(`/api/help-posts/${postId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ isResolved: true, userId: user.id })
+                })
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}))
+                    setError(err.error || "Failed to resolve post")
+                    return
+                }
+
+                // Update local state
+                setPosts(posts.map(p => p.id === postId ? { ...p, isResolved: true } : p))
+            } catch (err) {
+                console.error(err)
+                setError("Failed to resolve post")
+            } finally {
+                setLoading(false)
+            }
+        } else {
+            // career scope: localStorage
+            const updated = posts.map(p => p.id === postId ? { ...p, isResolved: true } : p)
+            setPosts(updated)
+            savePosts(updated)
+        }
     }
 
     // When switching scope to career, clear course input to avoid confusion
@@ -348,11 +389,24 @@ export default function HelpPage() {
                             <div key={p.id} className="bg-white p-4 rounded shadow-sm">
                                 <div className="flex items-center justify-between mb-2">
                                     <strong>{p.title}</strong>
-                                    <span className="text-xs text-gray-500">
-                                        {new Date(p.createdAt).toLocaleString()}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        {p.isResolved && <span className="text-green-600 font-semibold">Resolved</span>}
+                                        <span className="text-xs text-gray-500">
+                                            {new Date(p.createdAt).toLocaleString()}
+                                        </span>
+                                    </div>
                                 </div>
                                 <p className="text-gray-700 whitespace-pre-wrap mb-2">{p.body}</p>
+
+                                {/* Resolve Button */}
+                                {!p.isResolved && (!p.author || user?.id === p.author.id || userProfile?.role === "ADMIN") && (
+                                    <button
+                                        onClick={() => handleResolve(p.id)}
+                                        className="mb-2 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                                    >
+                                        Mark as Resolved
+                                    </button>
+                                )}
 
                                 {/* Comments Section */}
                                 <div className="mt-2 border-t pt-2">

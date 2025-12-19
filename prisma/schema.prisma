@@ -28,6 +28,11 @@ model User {
   notes            Note[]
   quizAttempts     QuizAttempt[]
   uploads          Upload[]
+  pages            Page[]
+  studentApplications StudentApplication[]
+  createdThesisGroups ThesisGroup[] @relation("ThesisGroupCreator")
+  groupMembers      GroupMember[] @relation("GroupMember")
+  joinRequests      GroupJoinRequest[] @relation("JoinRequest")
   department       Department?       @relation(fields: [departmentId], references: [id])
 
   @@map("users")

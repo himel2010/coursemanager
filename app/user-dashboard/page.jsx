@@ -37,4 +37,4 @@ const UserDashboard = () => {
   )
 }
 
-export default page
+export default UserDashboard
