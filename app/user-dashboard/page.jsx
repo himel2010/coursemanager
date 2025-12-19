@@ -9,7 +9,7 @@ import { redirect } from "next/navigation"
 import React, { useEffect, useState } from "react"
 
 const UserDashboard = () => {
-  const { userProfile, courses } = useAuth()
+  const { userProfile, courses } = useAuth() //getti gng courses from context
   // const [courses, setCourses] = useState()
 
   const [mount, setMount] = useState(false)
@@ -35,15 +35,15 @@ const UserDashboard = () => {
         </Button>
         <Button
           size="sm"
-          onClick={() => redirect("/thesis-groups")}
+          onClick={() => redirect("/research")}
           className="bg-purple-600 hover:bg-purple-700"
         >
-          Thesis Groups
+          Research Opportunities & Groups
         </Button>
         {userProfile?.isFinalYear && (
           <Button
             size="sm"
-            onClick={() => redirect("/opportunities")}
+            onClick={() => redirect("/research")}
             className="bg-blue-600 hover:bg-blue-700"
           >
             View Thesis & Internship Opportunities
