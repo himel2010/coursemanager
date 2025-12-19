@@ -1,16 +1,14 @@
 "use client"
-import { CourseDisplay } from "@/components/CourseDisplay"
-import ProfileHeader from "@/components/profile-header"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { useAuth } from "@/lib/auth/AuthContext"
-import { Heart } from "lucide-react"
-import { redirect } from "next/navigation"
-import React, { useEffect, useState } from "react"
 
-const UserDashboard = () => {
-  const { userProfile, courses } = useAuth()
-  // const [courses, setCourses] = useState()
+import { useAuth } from "@/lib/auth/AuthContext"
+
+import React, { useEffect, useState } from "react"
+import UserDashboard from "./UserDashboard"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { UserSidebar } from "@/components/UserSidebar"
+
+const page = () => {
+  const { userProfile } = useAuth()
 
   const [mount, setMount] = useState(false)
 
@@ -23,18 +21,16 @@ const UserDashboard = () => {
   }
   if (!userProfile) return null
   return (
-    <div className="w-full h-full p-5 flex flex-col justify gap-5">
-      <ProfileHeader userProfile={userProfile} />
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={() => redirect("/course/chat")}
-      >
-        Go to Chat
-      </Button>
-      <CourseDisplay courses={courses} />
-    </div>
+    <SidebarProvider defaultOpen={true}>
+      <UserSidebar />
+      <main className="w-full">
+        <SidebarTrigger />
+        <div className="w-full h-full p-5 flex flex-col justify gap-5">
+          <UserDashboard />
+        </div>
+      </main>
+    </SidebarProvider>
   )
 }
 
-export default UserDashboard
+export default page

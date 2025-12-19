@@ -10,7 +10,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { Calendar, User } from "lucide-react"
+import {
+  Calendar,
+  HelpCircle,
+  MessageCircleQuestionMark,
+  NotebookPen,
+  User,
+} from "lucide-react"
 
 export function UserSidebar() {
   return (
@@ -34,6 +40,22 @@ export function UserSidebar() {
                     <a href="/calendar">
                       <Calendar />
                       <span>Calendar</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <a href="/community/help">
+                      <MessageCircleQuestionMark />
+                      <span>Help</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <a href="/notes">
+                      <NotebookPen />
+                      <span>Notes</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

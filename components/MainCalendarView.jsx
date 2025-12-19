@@ -86,13 +86,15 @@ const MainCalendarView = ({ upcoming }) => {
     <div
       className={
         upcoming
-          ? "w-full max-w-6xl flex justify-center items-center"
+          ? "w-full h-full flex justify-center items-center "
           : `w-full h-[90vh] border-2 flex overflow-hidden`
       }
     >
       {/* Weekday Headers */}
 
-      <div className="w-full h-full overflow-y-auto">
+      <div
+        className={upcoming ? "w-full h-full" : "w-full h-full overflow-y-auto"}
+      >
         <CalendarNav upcoming={upcoming} />
         {/* Calendar Grid - Weeks (Rows) */}
         {upcoming ? (
