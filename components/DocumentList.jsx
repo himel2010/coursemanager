@@ -18,14 +18,26 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, Trash2, Share2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, MoreVertical, Trash2, Share2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 export function DocumentList({ userId, organizationId }) {
   const router = useRouter();
+  const { courses } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState("all");
   const [isCreating, setIsCreating] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState("");
+  const [newDocCourseId, setNewDocCourseId] = useState("");
   const [documents, setDocuments] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +93,7 @@ export function DocumentList({ userId, organizationId }) {
           title: newDocTitle,
           content: {},
           noteType: "DIGITAL",
+          courseId: newDocCourseId || null,
         }),
       });
 
@@ -95,6 +108,7 @@ export function DocumentList({ userId, organizationId }) {
       const newDoc = data;
       setDocuments([newDoc, ...documents]);
       setNewDocTitle("");
+      setNewDocCourseId("");
       setIsCreating(false);
       setError(null);
       router.push(`/notes/${newDoc.id}`);
@@ -140,10 +154,20 @@ export function DocumentList({ userId, organizationId }) {
   }
 
   const filteredDocuments = documents
-    .filter((doc) =>
-      doc.title.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    .filter((doc) => {
+      const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCourse = selectedCourse === "all" || doc.courseId === selectedCourse;
+      return matchesSearch && matchesCourse;
+    })
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+    .reduce((grouped, doc) => {
+      const courseId = doc.courseId || "uncategorized";
+      if (!grouped[courseId]) {
+        grouped[courseId] = [];
+      }
+      grouped[courseId].push(doc);
+      return grouped;
+    }, {});
 
   return (
     <div className="space-y-6">
@@ -179,6 +203,23 @@ export function DocumentList({ userId, organizationId }) {
                 }}
                 autoFocus
               />
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Course (Optional)
+                </label>
+                <Select value={newDocCourseId} onValueChange={setNewDocCourseId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses && courses.map((courseOffered) => (
+                      <SelectItem key={courseOffered.id} value={courseOffered.courseId}>
+                        {courseOffered.course.code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 onClick={handleCreateDocument}
                 disabled={!newDocTitle.trim()}
@@ -191,74 +232,114 @@ export function DocumentList({ userId, organizationId }) {
         </Dialog>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search documents..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and Filter */}
+      <div className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search documents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-2 block">Filter by Course</label>
+          <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+            <SelectTrigger>
+              <SelectValue placeholder="All courses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Courses</SelectItem>
+              <SelectItem value="uncategorized">No Course</SelectItem>
+              {courses && courses.map((courseOffered) => (
+                <SelectItem key={courseOffered.id} value={courseOffered.courseId}>
+                  {courseOffered.course.code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Documents Grid */}
-      {filteredDocuments.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredDocuments.map((doc) => (
-            <Link
-              key={doc.id}
-              href={`/notes/${doc.id}`}
-              className="group p-4 border rounded-lg hover:bg-accent transition-colors"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="text-lg font-semibold truncate group-hover:text-blue-600 transition-colors">
-                  {doc.title || "Untitled Document"}
-                </h3>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    asChild
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        // TODO: Implement share
-                      }}
+      {/* Documents Grid - Grouped by Course */}
+      {Object.keys(filteredDocuments).length > 0 ? (
+        <div className="space-y-8">
+          {Object.entries(filteredDocuments).map(([courseId, docs]) => {
+            const courseOffered = courseId === "uncategorized" 
+              ? null 
+              : courses?.find(c => c.courseId === courseId);
+            const courseCode = courseOffered ? courseOffered.course.code : "No Course";
+            
+            return (
+              <div key={courseId}>
+                <div className="mb-4 pb-2 border-b">
+                  <h2 className="text-xl font-semibold text-foreground">
+                    {courseCode}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {docs.length} {docs.length === 1 ? 'document' : 'documents'}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {docs.map((doc) => (
+                    <Link
+                      key={doc.id}
+                      href={`/notes/${doc.id}`}
+                      className="group p-4 border rounded-lg hover:bg-accent transition-colors"
                     >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleDeleteDocument(doc.id);
-                      }}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-lg font-semibold truncate group-hover:text-blue-600 transition-colors">
+                          {doc.title || "Untitled Document"}
+                        </h3>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            asChild
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.preventDefault();
+                                // TODO: Implement share
+                              }}
+                            >
+                              <Share2 className="w-4 h-4 mr-2" />
+                              Share
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteDocument(doc.id);
+                              }}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
 
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                {typeof doc.content === 'string' ? doc.content : "No content yet"}
-              </p>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        {typeof doc.content === 'string' ? doc.content : "No content yet"}
+                      </p>
 
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  Edited {formatDistanceToNow(new Date(doc.updatedAt), { addSuffix: true })}
-                </span>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>
+                          Edited {formatDistanceToNow(new Date(doc.updatedAt), { addSuffix: true })}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12">
