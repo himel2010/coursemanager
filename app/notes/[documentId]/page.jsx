@@ -19,6 +19,7 @@ function DocumentEditorPageContent() {
   const [document, setDocument] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
   const [error, setError] = useState(null);
+  const [progress, setProgress] = useState(null);
 
   // Load document from database
   useEffect(() => {
@@ -33,6 +34,7 @@ function DocumentEditorPageContent() {
         const doc = await response.json();
         setDocument(doc);
         setTitle(doc.title);
+        setProgress(doc.progress);
         setError(null);
       } catch (e) {
         console.error("Failed to load document:", e);
@@ -74,14 +76,19 @@ function DocumentEditorPageContent() {
     }
   };
 
-  const handleContentUpdate = async (content) => {
+  const handleContentUpdate = async (content, progressData) => {
     try {
+      const payload = { content };
+      if (progressData) {
+        payload.progress = progressData;
+      }
+      
       const response = await fetch(`/api/notes/${documentId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -90,6 +97,9 @@ function DocumentEditorPageContent() {
 
       const updatedDoc = await response.json();
       setDocument(updatedDoc);
+      if (updatedDoc.progress) {
+        setProgress(updatedDoc.progress);
+      }
     } catch (error) {
       console.error("Failed to update content:", error);
       setError(error.message);
@@ -172,7 +182,11 @@ function DocumentEditorPageContent() {
 
       {/* Editor */}
       <main className="container py-8">
-        <DocumentEditor documentId={documentId} onUpdate={handleContentUpdate} />
+        <DocumentEditor 
+          documentId={documentId} 
+          onUpdate={handleContentUpdate}
+          savedProgress={progress}
+        />
       </main>
     </div>
   );

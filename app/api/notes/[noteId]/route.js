@@ -16,7 +16,7 @@ export async function GET(req, { params }) {
       });
     }
 
-    const { noteId } = params;
+    const { noteId } = await params;
 
     // Get user from database
     let user = await db.user.findUnique({
@@ -82,8 +82,8 @@ export async function PATCH(req, { params }) {
       });
     }
 
-    const { noteId } = params;
-    const { title, content, topic, tags, courseId, noteType } = await req.json();
+    const { noteId } = await params;
+    const { title, content, topic, tags, courseId, noteType, progress } = await req.json();
 
     // Get user from database
     let user = await db.user.findUnique({
@@ -129,6 +129,7 @@ export async function PATCH(req, { params }) {
         ...(tags !== undefined && { tags }),
         ...(courseId !== undefined && { courseId }),
         ...(noteType !== undefined && { noteType }),
+        ...(progress !== undefined && { progress }),
       },
       include: {
         course: true,
@@ -162,7 +163,7 @@ export async function DELETE(req, { params }) {
       });
     }
 
-    const { noteId } = params;
+    const { noteId } = await params;
 
     // Get user from database
     let user = await db.user.findUnique({
