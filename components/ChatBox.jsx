@@ -70,7 +70,7 @@ const ChatBox = ({ userProfile, activeCourseID, messageCache }) => {
 
   const ws = usePartySocket({
     // usePartySocket takes the same arguments as PartySocket.
-    host: "localhost:1999", // or localhost:1999 in dev
+    host: "https://moodly-party.himel2010.partykit.dev/", // or localhost:1999 in dev
     room: activeCourseID,
 
     // in addition, you can provide socket lifecycle event handlers

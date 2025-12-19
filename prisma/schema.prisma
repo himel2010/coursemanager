@@ -279,6 +279,7 @@ model CalendarEvent {
   @@index([userId])
   @@index([courseOfferedId])
   @@index([startTime])
+  @@index([userId, courseOfferedId, startTime]) // Composite index for the OR query
   @@index([userId, startTime]) // For user's events ordered by time
   @@index([courseOfferedId, startTime]) // For course events ordered by time
   @@map("calendar_events")

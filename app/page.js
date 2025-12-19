@@ -2,20 +2,7 @@ import HeroSection from "@/components/shadcn-studio/blocks/hero-section-01/hero-
 import Header from "@/components/shadcn-studio/blocks/hero-section-01/header"
 import CommunitySection from "@/components/shadcn-studio/blocks/community-section/community-section"
 
-const navigationData = [
-  {
-    title: "Dashboard",
-    href: "/user-dashboard",
-  },
-  {
-    title: "Community",
-    href: "#community",
-  },
-  {
-    title: "Admin",
-    href: "/admin",
-  },
-]
+
 
 const HeroSectionPage = async () => {
   return (
