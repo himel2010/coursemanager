@@ -83,6 +83,13 @@ function DocumentEditorPageContent() {
         payload.progress = progressData;
       }
       
+      console.log('Saving content with payload:', { 
+        hasContent: !!content, 
+        hasProgress: !!progressData,
+        contentSize: JSON.stringify(content).length,
+        progressData: progressData
+      });
+      
       const response = await fetch(`/api/notes/${documentId}`, {
         method: "PATCH",
         headers: {
@@ -92,7 +99,14 @@ function DocumentEditorPageContent() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save content");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}: Failed to save content`;
+        console.error("API Error Response:", { 
+          status: response.status, 
+          error: errorData,
+          message: errorMessage 
+        });
+        throw new Error(errorMessage);
       }
 
       const updatedDoc = await response.json();
@@ -182,11 +196,14 @@ function DocumentEditorPageContent() {
 
       {/* Editor */}
       <main className="container py-8">
-        <DocumentEditor 
-          documentId={documentId} 
-          onUpdate={handleContentUpdate}
-          savedProgress={progress}
-        />
+        {document && (
+          <DocumentEditor 
+            documentId={documentId} 
+            initialContent={document.content}
+            onUpdate={handleContentUpdate}
+            savedProgress={progress}
+          />
+        )}
       </main>
     </div>
   );

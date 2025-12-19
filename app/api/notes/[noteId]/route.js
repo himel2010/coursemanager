@@ -83,7 +83,15 @@ export async function PATCH(req, { params }) {
     }
 
     const { noteId } = await params;
-    const { title, content, topic, tags, courseId, noteType, progress } = await req.json();
+    const body = await req.json();
+    const { title, content, topic, tags, courseId, noteType, progress } = body;
+    
+    console.log("PATCH body received:", { 
+      noteId,
+      hasContent: !!content,
+      hasProgress: !!progress,
+      fields: Object.keys(body)
+    });
 
     // Get user from database
     let user = await db.user.findUnique({
@@ -120,28 +128,43 @@ export async function PATCH(req, { params }) {
     }
 
     // Update note
+    const updateData = {
+      ...(title !== undefined && { title }),
+      ...(content !== undefined && { content }),
+      ...(topic !== undefined && { topic }),
+      ...(tags !== undefined && { tags }),
+      ...(courseId !== undefined && { courseId }),
+      ...(noteType !== undefined && { noteType }),
+      ...(progress !== undefined && { progress }),
+    };
+    
+    console.log("Updating note with data:", { 
+      noteId, 
+      updateFields: Object.keys(updateData),
+      hasContent: !!updateData.content,
+      hasProgress: !!updateData.progress
+    });
+
     const updatedNote = await db.note.update({
       where: { id: noteId },
-      data: {
-        ...(title !== undefined && { title }),
-        ...(content !== undefined && { content }),
-        ...(topic !== undefined && { topic }),
-        ...(tags !== undefined && { tags }),
-        ...(courseId !== undefined && { courseId }),
-        ...(noteType !== undefined && { noteType }),
-        ...(progress !== undefined && { progress }),
-      },
+      data: updateData,
       include: {
         course: true,
       },
     });
+
+    console.log("Note updated successfully:", { noteId, updatedAt: updatedNote.updatedAt });
 
     return new Response(JSON.stringify(updatedNote), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error updating note:", error);
+    console.error("Error updating note:", { 
+      error: error.message,
+      stack: error.stack,
+      code: error.code
+    });
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
     });
