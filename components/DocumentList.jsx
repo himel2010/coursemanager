@@ -28,59 +28,122 @@ export function DocumentList({ userId, organizationId }) {
   const [newDocTitle, setNewDocTitle] = useState("");
   const [documents, setDocuments] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Load documents from localStorage
+  // Load documents from database
   useEffect(() => {
-    setIsMounted(true);
-    const stored = localStorage.getItem("documents");
-    if (stored) {
+    const loadDocuments = async () => {
       try {
-        setDocuments(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse stored documents:", e);
+        setIsLoading(true);
+        const response = await fetch("/api/notes");
+        const data = await response.json();
+        
+        if (!response.ok) {
+          console.warn("API returned error:", data);
+          throw new Error(data.error || "Failed to fetch documents");
+        }
+        
+        setDocuments(data);
+        setError(null);
+      } catch (err) {
+        console.error("Error loading documents:", err);
+        setError(err.message);
+        // Fallback to localStorage if API fails
+        const stored = localStorage.getItem("documents");
+        if (stored) {
+          try {
+            setDocuments(JSON.parse(stored));
+          } catch (e) {
+            console.error("Failed to parse stored documents:", e);
+          }
+        }
+      } finally {
+        setIsLoading(false);
+        setIsMounted(true);
       }
-    }
+    };
+
+    loadDocuments();
   }, []);
 
   const handleCreateDocument = async () => {
     if (!newDocTitle.trim()) return;
 
-    const newDoc = {
-      id: Date.now().toString(),
-      title: newDocTitle,
-      content: "",
-      userId: userId || "local",
-      organizationId,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: newDocTitle,
+          content: {},
+          noteType: "DIGITAL",
+        }),
+      });
 
-    const updatedDocs = [...documents, newDoc];
-    setDocuments(updatedDocs);
-    localStorage.setItem("documents", JSON.stringify(updatedDocs));
+      const data = await response.json();
 
-    setNewDocTitle("");
-    setIsCreating(false);
-    router.push(`/notes/${newDoc.id}`);
+      if (!response.ok) {
+        const errorMsg = data.error || "Failed to create document";
+        console.error("Create document error:", errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      const newDoc = data;
+      setDocuments([newDoc, ...documents]);
+      setNewDocTitle("");
+      setIsCreating(false);
+      setError(null);
+      router.push(`/notes/${newDoc.id}`);
+    } catch (err) {
+      console.error("Error creating document:", err);
+      setError(err.message || "Failed to create document");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteDocument = async (docId) => {
     if (!confirm("Are you sure you want to delete this document?")) return;
 
-    const updatedDocs = documents.filter((doc) => doc.id !== docId);
-    setDocuments(updatedDocs);
-    localStorage.setItem("documents", JSON.stringify(updatedDocs));
+    try {
+      const response = await fetch(`/api/notes/${docId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete document");
+      }
+
+      setDocuments(documents.filter((doc) => doc.id !== docId));
+    } catch (err) {
+      console.error("Error deleting document:", err);
+      setError(err.message);
+    }
   };
 
-  if (!isMounted) {
+  if (!isMounted || isLoading) {
     return <div className="flex items-center justify-center h-96">Loading...</div>;
+  }
+
+  if (error && documents.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-semibold mb-2 text-red-600">Error Loading Documents</h3>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
+      </div>
+    );
   }
 
   const filteredDocuments = documents
     .filter((doc) =>
       doc.title.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
   return (
     <div className="space-y-6">
@@ -144,8 +207,8 @@ export function DocumentList({ userId, organizationId }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredDocuments.map((doc) => (
             <Link
-              key={doc._id}
-              href={`/notes/${doc._id}`}
+              key={doc.id}
+              href={`/notes/${doc.id}`}
               className="group p-4 border rounded-lg hover:bg-accent transition-colors"
             >
               <div className="flex items-start justify-between mb-2">
@@ -174,7 +237,7 @@ export function DocumentList({ userId, organizationId }) {
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.preventDefault();
-                        handleDeleteDocument(doc._id);
+                        handleDeleteDocument(doc.id);
                       }}
                       className="text-red-600"
                     >
@@ -186,7 +249,7 @@ export function DocumentList({ userId, organizationId }) {
               </div>
 
               <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                {doc.content || "No content yet"}
+                {typeof doc.content === 'string' ? doc.content : "No content yet"}
               </p>
 
               <div className="flex items-center justify-between text-xs text-muted-foreground">

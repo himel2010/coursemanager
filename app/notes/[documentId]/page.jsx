@@ -20,48 +20,29 @@ function DocumentEditorPageContent() {
   const [isMounted, setIsMounted] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load document from localStorage
+  // Load document from database
   useEffect(() => {
     if (!documentId) return;
     
-    try {
-      setIsMounted(true);
-      const stored = localStorage.getItem("documents");
-      if (stored) {
-        const docs = JSON.parse(stored);
-        const doc = docs.find((d) => d.id === String(documentId));
-        if (doc) {
-          setDocument(doc);
-          setTitle(doc.title);
-          setError(null);
-        } else {
-          // Document not found, create a placeholder
-          const newDoc = {
-            id: String(documentId),
-            title: "Untitled Document",
-            content: "",
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          };
-          setDocument(newDoc);
-          setTitle("Untitled Document");
+    const loadDocument = async () => {
+      try {
+        const response = await fetch(`/api/notes/${documentId}`);
+        if (!response.ok) {
+          throw new Error("Failed to load document");
         }
-      } else {
-        // No documents stored yet, create placeholder
-        const newDoc = {
-          id: String(documentId),
-          title: "Untitled Document",
-          content: "",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-        setDocument(newDoc);
-        setTitle("Untitled Document");
+        const doc = await response.json();
+        setDocument(doc);
+        setTitle(doc.title);
+        setError(null);
+      } catch (e) {
+        console.error("Failed to load document:", e);
+        setError(e.message);
+      } finally {
+        setIsMounted(true);
       }
-    } catch (e) {
-      console.error("Failed to load document:", e);
-      setError("Failed to load document");
-    }
+    };
+
+    loadDocument();
   }, [documentId]);
 
   const handleTitleChange = async (newTitle) => {
@@ -69,19 +50,25 @@ function DocumentEditorPageContent() {
 
     setIsSaving(true);
     try {
-      const stored = localStorage.getItem("documents");
-      const docs = JSON.parse(stored) || [];
-      const updated = docs.map((doc) =>
-        String(doc.id) === String(documentId)
-          ? { ...doc, title: newTitle, updatedAt: Date.now() }
-          : doc
-      );
-      localStorage.setItem("documents", JSON.stringify(updated));
-      setTitle(newTitle);
+      const response = await fetch(`/api/notes/${documentId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: newTitle }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update title");
+      }
+
+      const updatedDoc = await response.json();
+      setDocument(updatedDoc);
+      setTitle(updatedDoc.title);
       setIsEditing(false);
-      setDocument(updated.find((d) => String(d.id) === String(documentId)));
     } catch (error) {
       console.error("Failed to update title:", error);
+      setError(error.message);
     } finally {
       setIsSaving(false);
     }
@@ -89,16 +76,23 @@ function DocumentEditorPageContent() {
 
   const handleContentUpdate = async (content) => {
     try {
-      const stored = localStorage.getItem("documents");
-      const docs = JSON.parse(stored) || [];
-      const updated = docs.map((doc) =>
-        String(doc.id) === String(documentId)
-          ? { ...doc, content: JSON.stringify(content), updatedAt: Date.now() }
-          : doc
-      );
-      localStorage.setItem("documents", JSON.stringify(updated));
+      const response = await fetch(`/api/notes/${documentId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save content");
+      }
+
+      const updatedDoc = await response.json();
+      setDocument(updatedDoc);
     } catch (error) {
       console.error("Failed to update content:", error);
+      setError(error.message);
     }
   };
 
