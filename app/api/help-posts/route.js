@@ -7,6 +7,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const courseOfferedId = searchParams.get("courseOfferedId")
     const scope = searchParams.get("scope") || "course"
+    const isResolved = searchParams.get("isResolved")
 
     if (scope === "course") {
       // Accept either `courseId` or `courseOfferedId`. If `courseOfferedId` is provided
@@ -28,8 +29,13 @@ export async function GET(request) {
         return NextResponse.json({ error: "courseId or courseOfferedId required for course scope" }, { status: 400 })
       }
 
+      const whereClause = { courseId: resolvedCourseId }
+      if (isResolved !== null) {
+        whereClause.isResolved = isResolved === "true"
+      }
+
       const posts = await prisma.forumPost.findMany({
-        where: { courseId: resolvedCourseId },
+        where: whereClause,
         include: {
           author: { select: { id: true, name: true, email: true } },
           comments: {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { useAuth } from "@/lib/auth/AuthContext"
 
 // Key generator
@@ -271,10 +272,20 @@ export default function HelpPage() {
 
     return (
         <div className="max-w-4xl mx-auto py-12 px-4">
-            <h1 className="text-3xl font-bold mb-4">Course Help</h1>
-            <p className="text-gray-600 mb-6">
-                Select a scope and post problems so classmates and mentors can help.
-            </p>
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h1 className="text-3xl font-bold">Course Help</h1>
+                    <p className="text-gray-600 mt-1">
+                        Select a scope and post problems so classmates and mentors can help.
+                    </p>
+                </div>
+                <Link
+                    href="/community/help/resolved"
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                >
+                    Resolved QNA
+                </Link>
+            </div>
 
             <div className="mb-8 grid md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
