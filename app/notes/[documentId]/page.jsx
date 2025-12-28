@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DocumentEditor } from "@/components/DocumentEditor";
+import { PDFViewer } from "@/components/PDFViewer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Share2 } from "lucide-react";
@@ -20,6 +21,13 @@ function DocumentEditorPageContent() {
   const [isMounted, setIsMounted] = useState(false);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(null);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
+
+  // Ref to track if PDF viewer has been opened for this document
+  const pdfOpenedRef = useRef(false);
+
+  // Check if this is a PDF document (must be before conditional returns)
+  const isPDF = document?.noteType === "SCANNED" && document?.content?.type === "pdf";
 
   // Load document from database
   useEffect(() => {
@@ -28,8 +36,21 @@ function DocumentEditorPageContent() {
     const loadDocument = async () => {
       try {
         const response = await fetch(`/api/notes/${documentId}`);
+        
+        // If document not found (404), redirect to notes page
+        if (response.status === 404) {
+          router.push("/notes");
+          return;
+        }
+        
         if (!response.ok) {
-          throw new Error("Failed to load document");
+          const errorData = await response.json().catch(() => ({}));
+          console.error("API error:", {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData,
+          });
+          throw new Error(`Failed to load document: ${response.status} ${response.statusText}`);
         }
         const doc = await response.json();
         setDocument(doc);
@@ -45,7 +66,19 @@ function DocumentEditorPageContent() {
     };
 
     loadDocument();
-  }, [documentId]);
+  }, [documentId, router]);
+
+  // Auto-open PDF viewer for PDF documents (must be before conditional returns)
+  useEffect(() => {
+    if (isPDF && !pdfOpenedRef.current) {
+      pdfOpenedRef.current = true;
+      setShowPDFViewer(true);
+    }
+    // Reset ref when document changes to allow reopening different PDFs
+    if (!isPDF) {
+      pdfOpenedRef.current = false;
+    }
+  }, [isPDF]);
 
   const handleTitleChange = async (newTitle) => {
     if (!newTitle.trim()) return;
@@ -194,16 +227,22 @@ function DocumentEditorPageContent() {
         </div>
       </div>
 
-      {/* Editor */}
+      {/* Content */}
       <main className="container py-8">
-        {document && (
+        {isPDF && document.uploads && document.uploads.length > 0 && showPDFViewer ? (
+          <PDFViewer
+            uploadId={document.uploads[0].id}
+            fileName={document.uploads[0].fileName}
+            onClose={() => setShowPDFViewer(false)}
+          />
+        ) : document ? (
           <DocumentEditor 
             documentId={documentId} 
             initialContent={document.content}
             onUpdate={handleContentUpdate}
             savedProgress={progress}
           />
-        )}
+        ) : null}
       </main>
     </div>
   );

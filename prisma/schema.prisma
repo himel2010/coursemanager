@@ -231,9 +231,10 @@ model Upload {
   userId    String   @db.Uuid
   noteId    String?  @db.Uuid
   fileName  String
-  fileUrl   String
+  fileUrl   String?
   fileType  String
   fileSize  Int
+  pdfData   Bytes?   // Binary data for PDF files
   createdAt DateTime @default(now())
   note      Note?    @relation(fields: [noteId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

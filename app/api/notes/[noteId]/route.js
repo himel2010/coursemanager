@@ -40,6 +40,16 @@ export async function GET(req, { params }) {
       where: { id: noteId },
       include: {
         course: true,
+        uploads: {
+          select: {
+            id: true,
+            fileName: true,
+            fileType: true,
+            fileSize: true,
+            createdAt: true,
+            // Exclude pdfData as it's binary and not needed in the response
+          },
+        },
       },
     });
 
@@ -150,6 +160,16 @@ export async function PATCH(req, { params }) {
       data: updateData,
       include: {
         course: true,
+        uploads: {
+          select: {
+            id: true,
+            fileName: true,
+            fileType: true,
+            fileSize: true,
+            createdAt: true,
+            // Exclude pdfData as it's binary and not needed in the response
+          },
+        },
       },
     });
 
@@ -183,10 +203,12 @@ export async function DELETE(req, { params }) {
       console.error("Unauthorized - no userId");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
+        headers: { "Content-Type": "application/json" },
       });
     }
 
     const { noteId } = await params;
+    console.log("Deleting note:", noteId);
 
     // Get user from database
     let user = await db.user.findUnique({
@@ -211,30 +233,47 @@ export async function DELETE(req, { params }) {
     });
 
     if (!note) {
+      console.warn("Note not found for deletion:", noteId);
       return new Response(JSON.stringify({ error: "Note not found" }), {
         status: 404,
+        headers: { "Content-Type": "application/json" },
       });
     }
 
     if (note.userId !== user.id) {
+      console.error("Unauthorized delete attempt - user mismatch");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 403,
+        headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Delete note
+    // Delete all uploads first, then delete the note
+    console.log("Deleting uploads for note:", noteId);
+    await db.upload.deleteMany({
+      where: { noteId: noteId },
+    });
+
+    console.log("Deleting note:", noteId);
     await db.note.delete({
       where: { id: noteId },
     });
 
-    return new Response(JSON.stringify({ success: true }), {
+    console.log("Note deleted successfully:", noteId);
+
+    return new Response(JSON.stringify({ success: true, deletedNoteId: noteId }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error deleting note:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("Error deleting note:", { 
+      error: error.message, 
+      code: error.code,
+      stack: error.stack
+    });
+    return new Response(JSON.stringify({ error: error.message || "Failed to delete note" }), {
       status: 500,
+      headers: { "Content-Type": "application/json" },
     });
   }
 }
