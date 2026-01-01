@@ -14,24 +14,27 @@ import { getColor } from "@/lib/events/eventType"
 
 const CalendarEvent = ({ event, type }) => {
   const { user } = useAuth()
-
   const colors = getColor(event.type)
 
   return (
     <Dialog>
       <DialogTrigger className="flex-1 w-full">
         <div
-          className={`${colors.bg} ${colors.border} rounded-md flex-1  text-xs text-foreground px-2 flex flex-row  justify-start items-center border-l-5 transition-all hover:scale-[1.02] hover:cursor-pointer`}
+          className={`${colors.bg} ${colors.border} rounded-md text-foreground px-2 py-0.5 flex flex-row items-center border-l-5 transition-all hover:scale-[1.02] hover:cursor-pointer`}
         >
-          <div className="flex flex-col items-start w-full justify-center">
-            <p className="font-light text-[0.6rem] ">{event.courseCode}</p>
-            <strong className="font-bold">{event.title}</strong>
+          <div className="flex items-center gap-0.5 flex-1 min-w-0">
+            {event?.includeTime && (
+              <span className="font-extralight text-[0.55rem] whitespace-nowrap">
+                {event?.date?.format("h A")}
+              </span>
+            )}
+            <span className="font-semibold text-[0.65rem] truncate">
+              {event.title}
+            </span>
           </div>
-          {event?.includeTime && (
-            <div className="text-[0.6rem] items-center min-h-full ">
-              {event?.date?.format("hh:mm A")}
-            </div>
-          )}
+          <span className="font-light text-[0.55rem] whitespace-nowrap ml-1">
+            {event.courseCode}
+          </span>
         </div>
       </DialogTrigger>
       {type != "class" && (
