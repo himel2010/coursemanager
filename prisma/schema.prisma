@@ -33,6 +33,7 @@ model User {
   createdThesisGroups ThesisGroup[] @relation("ThesisGroupCreator")
   groupMembers      GroupMember[] @relation("GroupMember")
   joinRequests      GroupJoinRequest[] @relation("JoinRequest")
+  helpArticles     HelpArticle[]
   department       Department?       @relation(fields: [departmentId], references: [id])
 
   @@map("users")
@@ -96,6 +97,7 @@ model Course {
   coursesOffered CourseOffered[]
   forumPosts     ForumPost[]
   notes          Note[]
+  helpArticles   HelpArticle[]
 
   @@map("courses")
   @@schema("public")
@@ -372,6 +374,7 @@ model ForumPost {
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
   comments   ForumComment[]
+  helpArticles HelpArticle[]
   author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   course     Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
@@ -598,5 +601,52 @@ enum JoinRequestStatus {
   ACCEPTED
   REJECTED
 
+  @@schema("public")
+}
+model HelpArticle {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId    String   @db.Uuid
+  forumPostId String?  @db.Uuid
+  title       String
+  question    String
+  answer      String
+  authorId    String   @db.Uuid
+  viewCount   Int      @default(0)
+  helpful     Int      @default(0)
+  tags        String[]
+  searchIndex String   @db.Text // For full-text search
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  forumPost   ForumPost? @relation(fields: [forumPostId], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
+  @@index([authorId])
+  @@index([createdAt])
+  @@map("help_articles")
+  @@schema("public")
+}
+
+model QuizAttempt {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @db.Uuid
+  documentId    String   @db.Uuid
+  documentTitle String
+  totalQuestions Int
+  correctAnswers Int
+  score         Int      // 0-100
+  answers       Json     // Store user answers and evaluations
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document      Note     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([documentId])
+  @@index([createdAt])
+  @@map("quiz_attempts")
   @@schema("public")
 }

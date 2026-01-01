@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth/AuthContext"
+import SaveToHelpButton from "@/components/SaveToHelpButton"
 
 // Key generator
 function storageKey(scope, course) {
@@ -417,6 +418,16 @@ export default function HelpPage() {
                                     >
                                         Mark as Resolved
                                     </button>
+                                )}
+
+                                {/* Save to Help Button - Only show for course scope when resolved */}
+                                {scope === "course" && p.isResolved && (
+                                    <div className="mb-2 ml-2">
+                                        <SaveToHelpButton 
+                                            forumPost={{ id: p.id, title: p.title, content: p.body }} 
+                                            courseId={selectedCourseId}
+                                        />
+                                    </div>
                                 )}
 
                                 {/* Comments Section */}

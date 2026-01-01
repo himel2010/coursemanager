@@ -2,6 +2,11 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse } from "next/server"
 
 export async function middleware(request) {
+  // Skip API routes - let them pass through without auth checks
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -48,7 +53,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 }
