@@ -38,6 +38,16 @@ export async function GET(req) {
       where: { userId: user.id },
       include: {
         course: true,
+        uploads: {
+          select: {
+            id: true,
+            fileName: true,
+            fileType: true,
+            fileSize: true,
+            createdAt: true,
+            // Exclude pdfData to avoid serialization issues
+          },
+        },
       },
       orderBy: { updatedAt: "desc" },
     });
@@ -100,6 +110,7 @@ export async function POST(req) {
       },
       include: {
         course: true,
+        uploads: true,
       },
     });
 

@@ -98,14 +98,20 @@ function PageEditor({
   );
 }
 
-export function DocumentEditor({ documentId, onUpdate, savedProgress }) {
+export function DocumentEditor({ documentId, initialContent, onUpdate, savedProgress }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedTextColor, setSelectedTextColor] = useState("#000000");
   const [selectedHighlightColor, setSelectedHighlightColor] = useState("#ffd54f");
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPageId, setCurrentPageId] = useState(savedProgress?.currentPage || 1);
-  const [pages, setPages] = useState([{ id: 1, content: "" }]);
+  const [pages, setPages] = useState(() => {
+    // Initialize with content from database if available, otherwise empty
+    if (initialContent && Array.isArray(initialContent)) {
+      return initialContent;
+    }
+    return [{ id: 1, content: "" }];
+  });
   const [scrollPosition, setScrollPosition] = useState(savedProgress?.scrollPosition || 0);
   const [pagesRead, setPagesRead] = useState(savedProgress?.pagesRead || []);
   
@@ -758,7 +764,9 @@ export function DocumentEditor({ documentId, onUpdate, savedProgress }) {
           setPages(updatedPages);
           
           // Save to database immediately
-          onUpdate?.(updatedPages);
+          if (onUpdate) {
+            onUpdate(updatedPages);
+          }
           console.log("Drawing inserted and saved to database");
           
           // Exit drawing mode
@@ -822,7 +830,9 @@ export function DocumentEditor({ documentId, onUpdate, savedProgress }) {
         setCurrentPageId(updatedPages[0]?.id || 1);
       }
       delete editorsRef.current[pageId];
-      onUpdate?.(updatedPages);
+      if (onUpdate) {
+        onUpdate(updatedPages);
+      }
     }
   };
 
@@ -1147,7 +1157,9 @@ export function DocumentEditor({ documentId, onUpdate, savedProgress }) {
                             p.id === page.id ? { ...p, content: updatedContent } : p
                           );
                           setPages(updatedPages);
-                          onUpdate?.(updatedPages);
+                          if (onUpdate) {
+                            onUpdate(updatedPages);
+                          }
                         };
                       }
                       
@@ -1155,7 +1167,9 @@ export function DocumentEditor({ documentId, onUpdate, savedProgress }) {
                         p.id === page.id ? { ...p, content } : p
                       );
                       setPages(updatedPages);
-                      onUpdate?.(updatedPages);
+                      if (onUpdate) {
+                        onUpdate(updatedPages);
+                      }
                     }}
                     editorCallbacks={editorsRef.current}
                   />

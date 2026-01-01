@@ -30,7 +30,8 @@ export function AuthProvider({ children }) {
       console.log("user got", response.data)
       setUserProfile(response.data)
     } catch (error) {
-      console.error("Error fetching user profile:", error)
+      console.error("Error fetching user profile:", error.response?.data || error.message)
+      // Don't fail completely, just set empty profile
       setUserProfile(null)
     } finally {
       setLoading(false)
