@@ -46,6 +46,7 @@ const CalendarEvent = ({ event, type }) => {
               pageProperties={event?.page?.pageProperties}
               eventTitle={event?.title}
               editable={event?.owner === user.id}
+              event={event}
             />
           </div>
         </DialogContent>

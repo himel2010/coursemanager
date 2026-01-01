@@ -34,6 +34,10 @@ model User {
   groupMembers      GroupMember[] @relation("GroupMember")
   joinRequests      GroupJoinRequest[] @relation("JoinRequest")
   department       Department?       @relation(fields: [departmentId], references: [id])
+  createdEventGroups  EventGroup[]         @relation("EventGroupCreator")
+  eventGroupMemberships EventGroupMember[] @relation("EventGroupMembership")
+  sentGroupInvites    GroupInvite[]        @relation("SentGroupInvites")
+  receivedGroupInvites GroupInvite[]       @relation("ReceivedGroupInvites")
 
   @@map("users")
   @@schema("public")
@@ -124,6 +128,7 @@ model CourseOffered {
   maxStudents       Int?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
+  eventGroups EventGroup[]
   assignments       Assignment[]
   chatChannel       ChatChannel?
   course            Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -278,8 +283,10 @@ model CalendarEvent {
   courseOfferedId String    @db.Uuid
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  eventGroups EventGroup[]
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  
   
   @@index([userId])
   @@index([courseOfferedId])
@@ -300,6 +307,7 @@ model Page {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  eventGroup EventGroup?
 
   @@map("pages")
   @@schema("public")
@@ -598,5 +606,79 @@ enum JoinRequestStatus {
   ACCEPTED
   REJECTED
 
+  @@schema("public")
+}
+// Event-specific groups (repurposing and extending ProjectGroup concept)
+model EventGroup {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String            // Auto-generated: "Group 1 - CSE220 - ASSIGNMENT"
+  eventId         String            @db.Uuid
+  courseOfferedId String            @db.Uuid
+  creatorId       String            @db.Uuid
+  pageId          String?           @unique @db.Uuid
+  isLocked        Boolean           @default(false) // For faculty locking feature (placeholder)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  event           CalendarEvent     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  courseOffered   CourseOffered     @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  creator         User              @relation("EventGroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  page            Page?             @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  
+  members         EventGroupMember[]
+  invites         GroupInvite[]
+  
+  @@index([eventId])
+  @@index([courseOfferedId])
+  @@index([creatorId])
+  @@map("event_groups")
+  @@schema("public")
+}
+
+// Group members - who's actually in the group
+model EventGroupMember {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId   String      @db.Uuid
+  userId    String      @db.Uuid
+  joinedAt  DateTime    @default(now())
+  
+  group     EventGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User        @relation("EventGroupMembership", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("event_group_members")
+  @@schema("public")
+}
+
+// Group invitations - pending requests
+model GroupInvite {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId    String            @db.Uuid
+  inviterId  String            @db.Uuid  // Who sent the invite (creator)
+  inviteeId  String            @db.Uuid  // Who received the invite
+  status     GroupInviteStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
+  respondedAt DateTime?
+  
+  group      EventGroup        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  inviter    User              @relation("SentGroupInvites", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee    User              @relation("ReceivedGroupInvites", fields: [inviteeId], references: [id], onDelete: Cascade)
+  
+  @@unique([groupId, inviteeId])
+  @@index([groupId])
+  @@index([inviteeId])
+  @@index([status])
+  @@map("group_invites")
+  @@schema("public")
+}
+
+enum GroupInviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  
   @@schema("public")
 }
