@@ -4,7 +4,7 @@ const PagePropertyComponent = ({ pageProperties }) => {
       {Object.entries(pageProperties)?.map(([p, v], j) => (
         <div key={j} className="grid grid-cols-[1fr_4fr]">
           <div>{p}</div>
-          <div>{v}</div>
+          <div>{v?.toString()}</div>
         </div>
       ))}
     </div>
