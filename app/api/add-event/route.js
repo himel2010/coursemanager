@@ -145,6 +145,7 @@ async function storeAssignment(
             startTime: startedAt,
             includeTime: includeTime,
             eventType: eventType.toUpperCase(),
+            group: eventInfo.assignmentInfo.pageProperties.Groups === "True" ? true : false,
           },
         },
       },
