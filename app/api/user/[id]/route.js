@@ -1,9 +1,21 @@
 // app/api/user/[id]/route.js
 import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma"
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request, { params }) {
   try {
+    const supabase = await createClient()
+    const authData = await supabase.auth.getUser()
+    const currentUserId = authData.data?.user?.id
+
+    if (!currentUserId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
     const { id } = await params
 
     if (!id) {
@@ -13,16 +25,28 @@ export async function GET(request, { params }) {
       )
     }
 
+    // Only allow fetching own profile
+    if (id !== currentUserId) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      )
+    }
+
     // First, get the basic user info
-    const user = await db.user.findUnique({
+    let user = await db.user.findUnique({
       where: { id },
     })
 
+    // If user doesn't exist, create them
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      )
+      user = await db.user.create({
+        data: {
+          id: currentUserId,
+          email: authData.data.user.email || "",
+          name: authData.data.user.user_metadata?.name || "",
+        },
+      })
     }
 
     // Then get enrollments separately to avoid complex nesting issues

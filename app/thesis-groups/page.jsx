@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ThesisFacultyViewer from "@/components/ThesisFacultyViewer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ export default function ThesisGroupsPage() {
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showFacultyViewer, setShowFacultyViewer] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [selectedGroupForJoin, setSelectedGroupForJoin] = useState(null);
   const [showJoinRequestsModal, setShowJoinRequestsModal] = useState(false);
@@ -96,9 +98,14 @@ export default function ThesisGroupsPage() {
               Collaborate with peers on thesis projects
             </p>
           </div>
-          <Button onClick={() => setShowCreateModal(true)} className="bg-blue-600 hover:bg-blue-700">
-            + Create Group
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setShowCreateModal(true)} className="bg-blue-600 hover:bg-blue-700">
+              + Create Group
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowFacultyViewer(true)}>
+              Preview Supervisors
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -292,6 +299,19 @@ export default function ThesisGroupsPage() {
       </div>
 
       {/* Modals */}
+      {showFacultyViewer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 w-[95%] max-w-5xl h-[85%] overflow-auto rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-semibold">Thesis Faculty Preview</h2>
+              <Button size="sm" variant="ghost" onClick={() => setShowFacultyViewer(false)}>
+                Close
+              </Button>
+            </div>
+            <ThesisFacultyViewer />
+          </div>
+        </div>
+      )}
       {showCreateModal && (
         <CreateGroupModal
           onClose={() => setShowCreateModal(false)}
