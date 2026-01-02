@@ -5,6 +5,10 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Switch } from "../ui/switch"
 import { Label } from "../ui/label"
+import { Textarea } from "../ui/textarea"
+import { Input } from "../ui/input"
+import { Separator } from "../ui/separator"
+import { SeparatorVertical } from "lucide-react"
 
 const AssignmentEventForm = ({
   course,
@@ -23,6 +27,7 @@ const AssignmentEventForm = ({
     Date: date.format("DD/MM"),
     Reminder: null,
     Groups: "False",
+    member_range: [4, 4],
   })
 
   useEffect(() => {
@@ -50,6 +55,37 @@ const AssignmentEventForm = ({
           }
         />
       </div>
+      {pageProperties.Groups === "True" && (
+        <div className="flex gap-2 text-center items-center justify-between">
+          <Label>Member</Label>
+          <SeparatorVertical/>
+          <span className="text-sm">Min</span>
+            <Input
+              type="number"
+              size="sm"
+              value={pageProperties.member_range[0]}
+              onChange={(e) =>
+                setPageProperties({
+                  ...pageProperties,
+                  member_range: [parseInt(e.target.value), pageProperties.member_range[1] || 0],
+                })
+              }
+            />
+            <span className="text-sm">Max</span>
+            <Input
+              type="number"
+              size="sm"
+              value={pageProperties.member_range[1]}
+              onChange={(e) =>
+                setPageProperties({
+                  ...pageProperties,
+                  member_range: [pageProperties.member_range[0] || 0, parseInt(e.target.value)],
+                })
+              }
+            />
+
+        </div>
+      )}
       <div className="flex w-full justify-start items-start gap-2">
         {date && course ? (
           <div className="flex w-full justify-start items-start gap-2">
