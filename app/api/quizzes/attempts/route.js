@@ -15,7 +15,7 @@ export async function POST(req) {
       );
     }
 
-    const { documentId, documentTitle, totalQuestions, correctAnswers, score, answers } = await req.json();
+    const { documentId, totalQuestions, score } = await req.json();
 
     if (!documentId || totalQuestions === undefined || score === undefined) {
       return NextResponse.json(
@@ -28,11 +28,8 @@ export async function POST(req) {
       data: {
         userId,
         documentId,
-        documentTitle,
         totalQuestions,
-        correctAnswers: correctAnswers || 0,
         score,
-        answers: answers || [],
       },
     });
 

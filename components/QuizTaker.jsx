@@ -41,17 +41,27 @@ export default function QuizTaker({ quiz, onBack, onQuizComplete = null }) {
           options: currentQuestion.options,
         }),
       });
-
-      const data = await response.json();
-      if (data.success) {
-        setEvaluations({
-          ...evaluations,
-          [currentIndex]: data.evaluation,
-        });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.evaluation) {
+          setEvaluations({
+            ...evaluations,
+            [currentIndex]: data.evaluation,
+          });
+        } else {
+          // Fallback to local evaluation
+          const localEval = localEvaluate(currentIndex);
+          setEvaluations({ ...evaluations, [currentIndex]: localEval });
+        }
+      } else {
+        const localEval = localEvaluate(currentIndex);
+        setEvaluations({ ...evaluations, [currentIndex]: localEval });
       }
     } catch (error) {
       console.error("Error evaluating answer:", error);
-      alert("Failed to evaluate answer");
+      // Fallback to local evaluation on any failure
+      const localEval = localEvaluate(currentIndex);
+      setEvaluations({ ...evaluations, [currentIndex]: localEval });
     } finally {
       setLoading(false);
     }
@@ -93,6 +103,39 @@ export default function QuizTaker({ quiz, onBack, onQuizComplete = null }) {
       setCurrentIndex(0);
     }
   };
+
+  // Save results when results are first shown
+  useEffect(() => {
+    if (showResults) {
+      // Fill missing evaluations before saving
+      const filled = { ...evaluations };
+      quiz.questions.forEach((q, idx) => {
+        if (!filled[idx]) {
+          filled[idx] = localEvaluate(idx);
+        }
+      });
+      if (Object.keys(filled).length !== Object.keys(evaluations).length) {
+        setEvaluations(filled);
+      }
+      if (!isSavingResults) {
+        handleSaveResults();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showResults]);
+
+  function localEvaluate(idx) {
+    const q = quiz.questions[idx];
+    const userIdx = answers[idx];
+    const isCorrect = userIdx !== undefined && userIdx === q.correctOption;
+    return {
+      isCorrect,
+      score: isCorrect ? 100 : 0,
+      feedback: isCorrect
+        ? "Correct."
+        : `Incorrect. Correct answer: ${q.options[q.correctOption]}`,
+    };
+  }
 
   const calculateScore = () => {
     const evaluatedAnswers = Object.values(evaluations);
@@ -166,13 +209,6 @@ export default function QuizTaker({ quiz, onBack, onQuizComplete = null }) {
   };
 
   if (showResults) {
-    // Save results when first showing results
-    useEffect(() => {
-      if (!isSavingResults) {
-        handleSaveResults();
-      }
-    }, [showResults]);
-
     return (
       <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg">
         <h2 className="text-3xl font-bold mb-6 text-center">Quiz Results</h2>
@@ -195,6 +231,21 @@ export default function QuizTaker({ quiz, onBack, onQuizComplete = null }) {
             </p>
           </div>
         </div>
+
+        {/* Open-ended Questions Section (read-only) */}
+        {Array.isArray(quiz.sections?.questions) && quiz.sections.questions.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold mb-3">Question Section</h3>
+            <div className="space-y-3">
+              {quiz.sections.questions.map((q, idx) => (
+                <div key={idx} className="border rounded-lg p-4">
+                  <p className="text-sm text-gray-500 mb-1">Item {idx + 1}</p>
+                  <p className="font-medium text-gray-900">{q}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-6 mb-8">
           {quiz.questions.map((question, idx) => {
@@ -298,7 +349,22 @@ export default function QuizTaker({ quiz, onBack, onQuizComplete = null }) {
         </div>
       </div>
 
-      {/* Question */}
+      {/* Question Section (read-only, optional) */}
+      {Array.isArray(quiz.sections?.questions) && quiz.sections.questions.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3">Question Section</h3>
+          <div className="space-y-2">
+            {quiz.sections.questions.map((q, idx) => (
+              <div key={idx} className="border rounded p-3">
+                <p className="text-sm text-gray-500">Item {idx + 1}</p>
+                <p className="text-gray-900 font-medium">{q}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MCQ Question */}
       <div className="mb-6">
         <p className="text-xl font-semibold text-gray-900 mb-4">{currentQuestion.question}</p>
 

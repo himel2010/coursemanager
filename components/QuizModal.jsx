@@ -61,10 +61,10 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
         return;
       }
 
-      // Generate quiz using Qwen 3
-      const quizResponse = await fetch("/api/quiz-generate", {
+      // Generate quiz using Qwen 3 (new stable route)
+      const quizResponse = await fetch("/api/quiz", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
           documentContent: content,
           documentTitle: doc.title,
@@ -89,7 +89,7 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
         throw new Error("No quiz data returned from server");
       }
 
-      setQuiz(quizData.quiz);
+      setQuiz({ ...quizData.quiz, documentId: doc.id });
       setSelectedDoc(doc);
     } catch (err) {
       console.error("Error generating quiz:", err);

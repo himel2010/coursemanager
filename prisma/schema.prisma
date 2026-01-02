@@ -247,22 +247,6 @@ model Upload {
   @@schema("public")
 }
 
-model QuizAttempt {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String   @db.Uuid
-  noteId         String   @db.Uuid
-  score          Int
-  totalQuestions Int
-  createdAt      DateTime @default(now())
-  note           Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([noteId])
-  @@map("quiz_attempts")
-  @@schema("public")
-}
-
 model CalendarEvent {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId          String    @db.Uuid
@@ -631,23 +615,18 @@ model HelpArticle {
 }
 
 model QuizAttempt {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String   @db.Uuid
-  documentId    String   @db.Uuid
-  documentTitle String
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @db.Uuid
+  documentId     String   @map("noteId") @db.Uuid
+  score          Int
   totalQuestions Int
-  correctAnswers Int
-  score         Int      // 0-100
-  answers       Json     // Store user answers and evaluations
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt      DateTime @default(now())
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document      Note     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document       Note     @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([documentId])
-  @@index([createdAt])
   @@map("quiz_attempts")
   @@schema("public")
 }

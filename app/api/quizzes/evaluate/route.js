@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const OPENROUTER_API_KEY = process.env.QWEN_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ?? process.env.QWEN_API_KEY;
 const OPENROUTER_URL = "https://openrouter.io/api/v1/chat/completions";
 const MODEL = "qwen/qwen3-coder:free";
 
@@ -16,10 +16,16 @@ export async function POST(req) {
     }
 
     if (!OPENROUTER_API_KEY) {
-      return NextResponse.json(
-        { error: "API key not configured" },
-        { status: 500 }
-      );
+      // Local fallback evaluation when no AI key is present
+      const isCorrect = userAnswer?.trim() === correctAnswer?.trim();
+      return NextResponse.json({
+        success: true,
+        evaluation: {
+          isCorrect,
+          score: isCorrect ? 100 : 0,
+          feedback: isCorrect ? "Correct." : `Incorrect. Correct answer: ${correctAnswer}`,
+        },
+      });
     }
 
     // Prepare the prompt for answer evaluation
@@ -67,20 +73,12 @@ Requirements:
     });
 
     if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        const errorText = await response.text();
-        console.error("OpenRouter API error (non-JSON):", errorText.substring(0, 200));
-        return NextResponse.json(
-          { error: "OpenRouter API error: " + (errorText || "Unknown error") },
-          { status: response.status }
-        );
-      }
-      console.error("OpenRouter API error:", errorData);
+      const raw = await response.text();
+      let details = null;
+      try { details = JSON.parse(raw); } catch { /* keep raw */ }
+      console.error("OpenRouter API error:", details || raw.substring(0, 200));
       return NextResponse.json(
-        { error: "Failed to evaluate answer", details: errorData },
+        { error: "Failed to evaluate answer", details: details || raw.substring(0, 200) },
         { status: response.status }
       );
     }
