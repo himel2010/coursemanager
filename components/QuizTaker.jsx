@@ -270,21 +270,6 @@ export default function QuizTaker({ quiz, onBack, onQuizComplete = null }) {
           </div>
         </div>
 
-        {/* Open-ended Questions Section (read-only) */}
-        {Array.isArray(quiz.sections?.questions) && quiz.sections.questions.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold mb-3">Question Section</h3>
-            <div className="space-y-3">
-              {quiz.sections.questions.map((q, idx) => (
-                <div key={idx} className="border rounded-lg p-4">
-                  <p className="text-sm text-gray-500 mb-1">Item {idx + 1}</p>
-                  <p className="font-medium text-gray-900">{q}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="space-y-6 mb-8">
           {quiz.questions.map((question, idx) => {
             const evaluation = evaluations[idx];
@@ -386,21 +371,6 @@ export default function QuizTaker({ quiz, onBack, onQuizComplete = null }) {
           />
         </div>
       </div>
-
-      {/* Question Section (read-only, optional) */}
-      {Array.isArray(quiz.sections?.questions) && quiz.sections.questions.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-3">Question Section</h3>
-          <div className="space-y-2">
-            {quiz.sections.questions.map((q, idx) => (
-              <div key={idx} className="border rounded p-3">
-                <p className="text-sm text-gray-500">Item {idx + 1}</p>
-                <p className="text-gray-900 font-medium">{q}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* MCQ Question */}
       <div className="mb-6">
