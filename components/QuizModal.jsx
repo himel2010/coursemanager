@@ -141,6 +141,9 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
               console.log("Sample:", content.substring(0, 200));
             } else {
               console.warn("PDF extraction returned empty text");
+              if (extractData.extractionError) {
+                console.error("Extraction error:", extractData.extractionError);
+              }
             }
           } else {
             console.warn("PDF text extraction failed:", extractResponse.status, extractData.error);

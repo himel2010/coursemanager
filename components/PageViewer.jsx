@@ -17,7 +17,7 @@ export default function PageViewer({
   pageProperties,
   pageContent,
   editable,
-
+  event,
   eventTitle = "Title",
 }) {
   // Creates a new editor instance.
@@ -32,7 +32,10 @@ export default function PageViewer({
       <div className="flex flex-col gap-3 px-8">
         {eventTitle && <h1 className="text-6xl font-black">{eventTitle}</h1>}
         {eventTitle && pageProperties && (
-          <PagePropertyComponent pageProperties={pageProperties} />
+          <PagePropertyComponent
+            pageProperties={pageProperties}
+            event={event}
+          />
         )}
       </div>
 

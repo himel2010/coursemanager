@@ -95,29 +95,52 @@ export async function POST(req) {
       ? documentContent.slice(0, 8000) + "\n\n[Truncated for quiz generation]"
       : documentContent;
 
-    const prompt = `You are a strict quiz generator. Use ONLY the text inside CONTENT START/END. Do not use external knowledge.
+    const prompt = `You are an expert educational quiz creator. Create high-quality multiple choice questions based ONLY on the content provided below.
 
-Create two sections:
-- Section A: ${n} open-ended questions, each grounded to a specific sentence in the content.
-- Section B: ${n} MCQs where ALL options and the correct answer come from the document text.
+TASK: Generate ${n} well-crafted MCQ questions that test understanding of the key concepts in the document.
 
-Rules:
-- Never include or infer the document title.
-- Do not leak the correct answer inside the question.
-- Ground each item to a source sentence index (0-based).
-- For MCQ options, use exact words/phrases or whole sentences copied from the content.
+REQUIREMENTS FOR EACH QUESTION:
+1. Write clear, grammatically correct questions that read naturally
+2. Questions should test comprehension, not just word recognition
+3. Each question should have exactly 4 options (A, B, C, D)
+4. All options must be plausible and similar in length/style
+5. The correct answer must be factually accurate based on the document
+6. Distractors (wrong answers) should be reasonable but clearly incorrect
+7. Avoid questions that can be answered without reading the document
+
+QUESTION TYPES TO USE:
+- "According to the document, what is...?"
+- "Which of the following best describes...?"
+- "What is the main purpose/benefit of...?"
+- "How does [concept] relate to...?"
+- "Which statement about [topic] is correct?"
+
+DO NOT:
+- Reference the document title in questions
+- Include the answer in the question text
+- Use trivial "fill in the blank" style questions
+- Create questions about formatting or structure
 
 Return ONLY valid JSON in this exact format:
 {
   "sections": {
-    "questions": [ { "id": 1, "question": "...", "sourceIndex": 0 } ],
-    "mcq": [ { "id": 1, "question": "...", "options": ["..."], "correctOption": 0, "explanation": "...", "sourceIndex": 0 } ]
+    "questions": [],
+    "mcq": [
+      {
+        "id": 1,
+        "question": "According to the document, what is the primary benefit of iterative development?",
+        "options": ["Faster initial delivery", "Better adaptation to changing requirements", "Lower development costs", "Reduced team size"],
+        "correctOption": 1,
+        "explanation": "The document states that iterative development allows teams to adapt to changing requirements."
+      }
+    ]
   }
 }
 
-CONTENT START
+DOCUMENT CONTENT:
 ${safeContent}
-CONTENT END`;
+
+Generate ${n} high-quality MCQ questions now:`;
 
     // Try models in order until one succeeds
     let aiResponse;
@@ -368,32 +391,46 @@ function buildFallbackQuiz({ documentTitle, documentContent, numQuestions = 5 })
   let sanitizedText = lines.join(" ");
   if (documentTitle) {
     const safeTitle = documentTitle.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
-    sanitizedText = sanitizedText.replace(new RegExp(safeTitle, "gi"), "the passage");
+    sanitizedText = sanitizedText.replace(new RegExp(safeTitle, "gi"), "the topic");
   }
 
+  // Extract meaningful sentences (longer, complete thoughts)
   const sentences = sanitizedText
     .replace(/\s+/g, " ")
     .split(/(?<=[.!?])\s+/)
     .map(s => s.trim())
-    .filter(s => s && s.length > 10 && !/\b(Document|Note|PDF)\b/i.test(s))
-    .slice(0, 80);
+    .filter(s => s && s.length > 30 && s.split(/\s+/).length >= 5 && !/\b(Document|Note|PDF)\b/i.test(s))
+    .slice(0, 100);
+
+  // Extract key terms and concepts
+  const stopwords = new Set([
+    "the", "and", "that", "with", "from", "this", "have", "were", "been", "into", 
+    "about", "which", "while", "where", "there", "their", "using", "used", "use",
+    "also", "will", "would", "should", "could", "being", "more", "most", "some",
+    "such", "than", "then", "they", "them", "these", "those", "what", "when",
+    "your", "each", "other", "very", "just", "only", "over", "much", "many"
+  ]);
 
   const words = sanitizedText
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
-    .filter(w => w.length > 3);
+    .filter(w => w.length > 4 && !stopwords.has(w));
 
-  const uniq = (arr) => Array.from(new Set(arr));
-  const pick = (arr, n) => {
-    const copy = [...arr];
-    const out = [];
-    while (copy.length && out.length < n) {
-      const i = Math.floor(Math.random() * copy.length);
-      out.push(copy.splice(i, 1)[0]);
-    }
-    return out;
-  };
+  const wordFreq = {};
+  for (const w of words) {
+    wordFreq[w] = (wordFreq[w] || 0) + 1;
+  }
+  
+  // Get top keywords by frequency (these are likely important concepts)
+  const keyTerms = Object.entries(wordFreq)
+    .filter(([w, c]) => c >= 2 && w.length > 4)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 50)
+    .map(([w]) => w);
+
+  const capitalize = (s) => (typeof s === 'string' && s.length ? s[0].toUpperCase() + s.slice(1) : s);
+  
   const shuffle = (arr) => {
     const a = [...arr];
     for (let j = a.length - 1; j > 0; j--) {
@@ -403,208 +440,133 @@ function buildFallbackQuiz({ documentTitle, documentContent, numQuestions = 5 })
     return a;
   };
 
-  const keywords = uniq(words).slice(0, 200);
-  const numbers = (sanitizedText.match(/\b\d+(?:\.\d+)?\b/g) || []).slice(0, 50).map(Number);
-  const nameSeed = ["Alex", "Sam", "Jordan", "Taylor", "Casey", "Riley", "Morgan", "Avery"];
-  const stopwords = new Set(["the","and","that","with","from","this","have","were","been","into","about","which","while","where","there","their","using","used","use","user","document","note"]);
-  const capitalize = (s) => (typeof s === 'string' && s.length ? s[0].toUpperCase() + s.slice(1) : s);
-  const docWords = uniq(words)
-    .filter(w => w.length > 4 && !stopwords.has(w))
-    .map(capitalize)
-    .slice(0, 500);
-
-  // If the document is too short to form sentences, fall back to token-choice MCQs.
-  function makeTokenChoice(i) {
-    const pool = docWords.length ? docWords : uniq(words).map(capitalize);
-    const chosen = shuffle(pick(pool, 4));
-    const correct = chosen[0] || pool[0] || "content";
-    const options = ensureOptionsUnique(chosen.length ? chosen : [correct], 4, pool);
-    const correctOption = Math.max(0, options.findIndex(o => normalizeOptionText(o) === normalizeOptionText(correct)));
-    return {
-      question: 'Which of the following words/terms appears in the document?',
-      options,
-      correctOption,
-      explanation: 'The correct option is an exact term found in the provided document text.',
-      sourceIndex: 0,
-    };
-  }
-
-  function findOptionIndex(options, target) {
-    const t = normalizeOptionText(target);
-    const idx = options.findIndex(o => normalizeOptionText(o) === t);
-    return idx >= 0 ? idx : 0;
-  }
-
-  function normalizeOptionText(s) {
-    return String(s).toLowerCase().replace(/\s+/g, ' ').replace(/[^a-z0-9 ]/g, '').trim();
-  }
-  function ensureOptionsUnique(opts, min = 4, docPool = []) {
-    const seen = new Set();
+  const pick = (arr, n) => {
+    const copy = [...arr];
     const out = [];
-    for (const o of opts) {
-      const k = normalizeOptionText(o);
-      if (!k || seen.has(k)) continue;
-      seen.add(k);
-      out.push(String(o));
+    while (copy.length && out.length < n) {
+      const i = Math.floor(Math.random() * copy.length);
+      out.push(copy.splice(i, 1)[0]);
     }
-    // Use doc-derived pool to pad, never external fillers
-    const source = Array.isArray(docPool) && docPool.length > 0 ? docPool : keywords.map(w => w[0].toUpperCase() + w.slice(1));
-    let i = 0;
-    while (out.length < min && i < source.length) {
-      const candidate = String(source[i]);
-      const k = normalizeOptionText(candidate);
-      if (k && !seen.has(k)) {
-        seen.add(k);
-        out.push(candidate);
-      }
-      i++;
-    }
-    // If still short, sample more unique words from the document text
-    if (out.length < min) {
-      const extras = uniq(words.filter(w => w.length > 3)).map(w => w[0].toUpperCase() + w.slice(1));
-      for (const cand of extras) {
-        const k = normalizeOptionText(cand);
-        if (k && !seen.has(k)) {
-          seen.add(k);
-          out.push(cand);
-          if (out.length >= min) break;
-        }
-      }
-    }
-    return out.slice(0, Math.max(min, out.length));
+    return out;
+  };
+
+  // Question templates for better quality
+  const questionTemplates = [
+    { template: "According to the document, which of the following is true about {topic}?", type: "concept" },
+    { template: "What does the document indicate about {topic}?", type: "concept" },
+    { template: "Based on the content, {topic} is primarily associated with:", type: "association" },
+    { template: "Which of the following best describes {topic} as mentioned in the document?", type: "description" },
+    { template: "The document suggests that {topic}:", type: "implication" },
+  ];
+
+  // Find sentences containing a key term
+  function findSentencesWithTerm(term) {
+    return sentences.filter(s => s.toLowerCase().includes(term.toLowerCase()));
   }
 
-  // Strict doc-only MCQ generators
-  function makeClozeStrict(i) {
-    if (!sentences.length) return makeTokenChoice(i);
-    const base = sentences[i % sentences.length] || sentences[0] || "";
-    const tokenList = base.split(/\s+/).filter(t => t.length > 4 && !stopwords.has(t.toLowerCase()));
-    let target = tokenList[Math.floor(Math.random() * tokenList.length)] || tokenList[0];
-    if (!target) {
-      // pick a word from the document strictly
-      target = docWords[0];
-      if (!target) return makeTokenChoice(i);
+  // Extract a fact from a sentence
+  function extractFactFromSentence(sentence) {
+    // Clean up the sentence
+    let fact = sentence.trim();
+    if (fact.length > 150) {
+      fact = fact.substring(0, 147) + "...";
     }
-    const targetDisplay = capitalize(String(target));
-    const question = base.replace(target, "_____ ");
-    const distractorsDoc = pick(docWords.filter(w => w.toLowerCase() !== String(target).toLowerCase()), 10);
-    const options = ensureOptionsUnique(shuffle([targetDisplay, ...distractorsDoc]).slice(0, 4), 4, docWords);
-    return {
-      question: `Fill in the blank: ${question}`,
-      options,
-      correctOption: findOptionIndex(options, targetDisplay),
-      explanation: `From the document sentence: ${base.slice(0, 120)}`,
-      sourceIndex: i % sentences.length,
-    };
+    return fact;
   }
 
-  function makeSentenceChoice(i) {
-    if (!sentences.length) return makeTokenChoice(i);
-    const correct = sentences[i % sentences.length] || sentences[0] || "";
-    const tokenList = correct.split(/\s+/).filter(t => t.length > 4 && !stopwords.has(t.toLowerCase()));
-    let cue = tokenList[Math.floor(Math.random() * tokenList.length)] || tokenList[0];
-    if (!cue) cue = (docWords[0] || (correct.split(/\s+/).find(w => w.length > 4) ?? "content"));
-    const sentencePool = uniq(sentences.filter(s => s && s.length > 10));
-    // If we don't have enough sentences to build options, fall back to token-choice.
-    if (sentencePool.length < 2) return makeTokenChoice(i);
-    const distractorSentences = pick(sentencePool.filter(s => s !== correct), 10);
-    const options = ensureOptionsUnique(shuffle([correct, ...distractorSentences]).slice(0, 4), 4, sentencePool);
-    const idx = options.indexOf(correct);
-    return {
-      question: `Which sentence from the document best mentions "${cue}"?`,
-      options,
-      correctOption: idx < 0 ? 0 : idx,
-      explanation: `Direct quote from source sentence: ${correct.slice(0, 120)}`,
-      sourceIndex: i % sentences.length,
-    };
+  // Generate distractor options based on the document content
+  function generateDistractors(correctAnswer, topic, count = 3) {
+    const distractors = [];
+    const correctLower = correctAnswer.toLowerCase();
+    
+    // Find other sentences that don't contain the correct answer
+    const otherSentences = sentences
+      .filter(s => !s.toLowerCase().includes(correctLower.substring(0, 30)))
+      .slice(0, 20);
+    
+    // Create plausible but incorrect options
+    for (const sent of shuffle(otherSentences)) {
+      if (distractors.length >= count) break;
+      let distractor = extractFactFromSentence(sent);
+      if (distractor.length > 20 && distractor !== correctAnswer) {
+        distractors.push(distractor);
+      }
+    }
+
+    // If we need more distractors, create variations
+    while (distractors.length < count) {
+      const filler = keyTerms[distractors.length] || "alternative approach";
+      distractors.push(`${capitalize(filler)} is the primary factor`);
+    }
+
+    return distractors.slice(0, count);
   }
-  // Only use document-derived question generators - no external/synthetic questions
-  const generators = [makeClozeStrict, makeSentenceChoice];
-  const pickGenerator = (i) => generators[i % generators.length];
-  const target = sanitizeNumQuestions(numQuestions);
+
+  // Build high-quality questions
   const questions = [];
-  for (let i = 0; i < target; i++) {
-    const gen = pickGenerator(i);
-    const q = gen(i);
-    // Safety: ensure at least 2 options and valid index
-    if (!q.options || q.options.length < 2) {
-      const alt = makeClozeStrict(i);
-      q.options = alt.options;
-      q.correctOption = alt.correctOption;
-      q.explanation = alt.explanation;
-      q.sourceIndex = alt.sourceIndex;
-    }
-    // Always enforce 4 document-derived options
-    q.options = ensureOptionsUnique(q.options, 4, docWords);
-    if (q.options.length < 4) {
-      // Fallback to sentence-choice if still insufficient
-      const alt2 = makeSentenceChoice(i);
-      q.question = alt2.question;
-      q.options = ensureOptionsUnique(alt2.options, 4, sentences);
-      q.correctOption = (alt2.correctOption < 0 || alt2.correctOption >= q.options.length) ? 0 : alt2.correctOption;
-      q.explanation = alt2.explanation;
-      q.sourceIndex = alt2.sourceIndex;
-    }
-    if (q.correctOption < 0 || q.correctOption >= q.options.length) q.correctOption = 0;
-    questions.push({ id: i + 1, ...q });
+  const usedTerms = new Set();
+  const target = sanitizeNumQuestions(numQuestions);
+
+  for (let i = 0; i < target && i < keyTerms.length; i++) {
+    const term = keyTerms[i];
+    if (usedTerms.has(term)) continue;
+    usedTerms.add(term);
+
+    const relatedSentences = findSentencesWithTerm(term);
+    if (relatedSentences.length === 0) continue;
+
+    const sourceSentence = relatedSentences[0];
+    const correctAnswer = extractFactFromSentence(sourceSentence);
+    
+    // Pick a question template
+    const template = questionTemplates[i % questionTemplates.length];
+    const question = template.template.replace("{topic}", capitalize(term));
+
+    // Generate options
+    const distractors = generateDistractors(correctAnswer, term, 3);
+    const allOptions = shuffle([correctAnswer, ...distractors]);
+    const correctIndex = allOptions.indexOf(correctAnswer);
+
+    questions.push({
+      id: questions.length + 1,
+      question,
+      options: allOptions,
+      correctOption: correctIndex >= 0 ? correctIndex : 0,
+      explanation: `This answer is supported by the document text.`,
+      sourceIndex: sentences.indexOf(sourceSentence),
+    });
   }
 
-  // Deduplicate questions and ensure options are present
-  const seenStems = new Set();
-  const usedIndices = new Set();
-  const uniqueQuestions = [];
-  for (const q of questions) {
-    const key = String(q.question).toLowerCase().replace(/\s+/g, ' ').trim();
-    if (seenStems.has(key)) continue;
-    seenStems.add(key);
-    if (typeof q.sourceIndex === 'number') usedIndices.add(q.sourceIndex);
-    // Ensure options
-    if (!Array.isArray(q.options) || q.options.length < 4) {
-      const idx = typeof q.sourceIndex === 'number' ? q.sourceIndex : uniqueQuestions.length % sentences.length;
-      const fix = makeSentenceChoice(idx);
-      q.question = fix.question;
-      q.options = ensureOptionsUnique(fix.options, 4, sentences);
-      q.correctOption = (fix.correctOption < 0 || fix.correctOption >= q.options.length) ? 0 : fix.correctOption;
-      q.explanation = fix.explanation;
-      q.sourceIndex = fix.sourceIndex;
-    }
-    uniqueQuestions.push(q);
-  }
-  // If not enough unique questions, fill from remaining sentence indices
-  let fillIdx = 0;
-  while (uniqueQuestions.length < target && fillIdx < Math.max(1, sentences.length)) {
-    if (!usedIndices.has(fillIdx)) {
-      const nq = sentences.length ? makeSentenceChoice(fillIdx) : makeTokenChoice(fillIdx);
-      uniqueQuestions.push({
-        id: uniqueQuestions.length + 1,
-        question: nq.question,
-        options: ensureOptionsUnique(nq.options, 4, sentences),
-        correctOption: (nq.correctOption < 0 || nq.correctOption >= 4) ? 0 : nq.correctOption,
-        explanation: nq.explanation,
-        sourceIndex: nq.sourceIndex,
-      });
-      usedIndices.add(fillIdx);
-    }
-    fillIdx++;
-  }
+  // If we don't have enough questions, create concept-based questions
+  while (questions.length < target && sentences.length > questions.length) {
+    const idx = questions.length;
+    const sentence = sentences[idx % sentences.length];
+    const words = sentence.split(/\s+/).filter(w => w.length > 5 && !stopwords.has(w.toLowerCase()));
+    const keyWord = words[0] || "concept";
 
-  // Build a set of open-ended questions from document sentences
-  const freeQuestions = [];
-  const stems = sentences.slice(0, Math.max(5, target));
-  for (let i = 0; i < Math.min(target, stems.length); i++) {
-    const s = stems[i];
-    const q = s.length > 160 ? s.slice(0, 160) + "…" : s;
-    freeQuestions.push(`Explain what this sentence means: ${q}`);
+    const question = `Which statement from the document discusses ${keyWord.toLowerCase()}?`;
+    const correctAnswer = extractFactFromSentence(sentence);
+    const distractors = generateDistractors(correctAnswer, keyWord, 3);
+    const allOptions = shuffle([correctAnswer, ...distractors]);
+
+    questions.push({
+      id: questions.length + 1,
+      question,
+      options: allOptions,
+      correctOption: allOptions.indexOf(correctAnswer),
+      explanation: `This is directly stated in the document.`,
+      sourceIndex: idx % sentences.length,
+    });
   }
 
   return {
     title: `Quiz: ${documentTitle}`,
     documentTitle,
-    questions: uniqueQuestions,
-    totalQuestions: uniqueQuestions.length,
+    questions: questions.slice(0, target),
+    totalQuestions: Math.min(questions.length, target),
     sections: {
-      questions: freeQuestions,
-      mcq: uniqueQuestions,
+      questions: [],
+      mcq: questions.slice(0, target),
     },
   };
 }

@@ -33,8 +33,11 @@ model User {
   createdThesisGroups ThesisGroup[] @relation("ThesisGroupCreator")
   groupMembers      GroupMember[] @relation("GroupMember")
   joinRequests      GroupJoinRequest[] @relation("JoinRequest")
-  helpArticles     HelpArticle[]
   department       Department?       @relation(fields: [departmentId], references: [id])
+  createdEventGroups  EventGroup[]         @relation("EventGroupCreator")
+  eventGroupMemberships EventGroupMember[] @relation("EventGroupMembership")
+  sentGroupInvites    GroupInvite[]        @relation("group_invites_inviterIdTousers")
+  receivedGroupInvites GroupInvite[]       @relation("group_invites_inviteeIdTousers")
 
   @@map("users")
   @@schema("public")
@@ -97,7 +100,6 @@ model Course {
   coursesOffered CourseOffered[]
   forumPosts     ForumPost[]
   notes          Note[]
-  helpArticles   HelpArticle[]
 
   @@map("courses")
   @@schema("public")
@@ -126,6 +128,7 @@ model CourseOffered {
   maxStudents       Int?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
+  eventGroups EventGroup[]
   assignments       Assignment[]
   chatChannel       ChatChannel?
   course            Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -265,8 +268,10 @@ model CalendarEvent {
   courseOfferedId String    @db.Uuid
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  eventGroups EventGroup[]
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  
   
   @@index([userId])
   @@index([courseOfferedId])
@@ -287,6 +292,7 @@ model Page {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  eventGroup EventGroup?
 
   @@map("pages")
   @@schema("public")
@@ -359,7 +365,6 @@ model ForumPost {
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
   comments   ForumComment[]
-  helpArticles HelpArticle[]
   author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   course     Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
@@ -581,6 +586,81 @@ model GroupJoinRequest {
   @@schema("public")
 }
 
+model QuizAttempt {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @db.Uuid
+  noteId         String   @db.Uuid
+  score          Int
+  totalQuestions Int
+  createdAt      DateTime @default(now())
+  note           Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([noteId])
+  @@map("quiz_attempts")
+  @@schema("public")
+}
+
+model EventGroup {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  eventId         String             @db.Uuid
+  courseOfferedId String             @db.Uuid
+  creatorId       String             @db.Uuid
+  pageId          String?            @unique @db.Uuid
+  isLocked        Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  members         EventGroupMember[]
+  courseOffered   CourseOffered      @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  creator         User               @relation("EventGroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  calendarEvent   CalendarEvent      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  page            Page?              @relation(fields: [pageId], references: [id])
+  invites         GroupInvite[]
+
+  @@index([creatorId])
+  @@index([courseOfferedId])
+  @@index([eventId])
+  @@map("event_groups")
+  @@schema("public")
+}
+
+model EventGroupMember {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId    String     @db.Uuid
+  userId     String     @db.Uuid
+  joinedAt   DateTime   @default(now())
+  eventGroup EventGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user       User       @relation("EventGroupMembership", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@index([groupId])
+  @@map("event_group_members")
+  @@schema("public")
+}
+
+model GroupInvite {
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId     String            @db.Uuid
+  inviterId   String            @db.Uuid
+  inviteeId   String            @db.Uuid
+  status      GroupInviteStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  respondedAt DateTime?
+  eventGroup  EventGroup        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  inviter     User              @relation("group_invites_inviterIdTousers", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee     User              @relation("group_invites_inviteeIdTousers", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, inviteeId])
+  @@index([groupId])
+  @@index([inviteeId])
+  @@index([status])
+  @@map("group_invites")
+  @@schema("public")
+}
+
 enum JoinRequestStatus {
   PENDING
   ACCEPTED
@@ -588,45 +668,12 @@ enum JoinRequestStatus {
 
   @@schema("public")
 }
-model HelpArticle {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  courseId    String   @db.Uuid
-  forumPostId String?  @db.Uuid
-  title       String
-  question    String
-  answer      String
-  authorId    String   @db.Uuid
-  viewCount   Int      @default(0)
-  helpful     Int      @default(0)
-  tags        String[]
-  searchIndex String   @db.Text // For full-text search
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  forumPost   ForumPost? @relation(fields: [forumPostId], references: [id], onDelete: SetNull)
+enum GroupInviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
 
-  @@index([courseId])
-  @@index([authorId])
-  @@index([createdAt])
-  @@map("help_articles")
-  @@schema("public")
-}
-
-model QuizAttempt {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String   @db.Uuid
-  documentId     String   @map("noteId") @db.Uuid
-  score          Int
-  totalQuestions Int
-  createdAt      DateTime @default(now())
-
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document       Note     @relation(fields: [documentId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([documentId])
-  @@map("quiz_attempts")
   @@schema("public")
 }

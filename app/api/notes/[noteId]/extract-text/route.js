@@ -15,7 +15,7 @@ async function extractTextFromPDF(pdfBuffer) {
     
     if (!text.trim()) {
       console.warn("PDF extraction returned empty text");
-      return "";
+      return { text: "", error: null };
     }
     
     // Log a sample of the extracted text for debugging
@@ -28,7 +28,7 @@ async function extractTextFromPDF(pdfBuffer) {
       text = cleanExtractedText(text);
       if (text.length < 50) {
         console.warn("Cleaned text too short:", text.length);
-        return "";
+        return { text: "", error: "Text too short after cleaning" };
       }
     } else {
       // Clean the text to remove any remaining garbled parts
@@ -36,10 +36,11 @@ async function extractTextFromPDF(pdfBuffer) {
     }
     
     console.log("Final cleaned text length:", text.length);
-    return text;
+    return { text, error: null };
   } catch (error) {
     console.error("PDF extraction error:", error.message);
-    return "";
+    console.error("PDF extraction stack:", error.stack);
+    return { text: "", error: error.message };
   }
 }
 
@@ -118,16 +119,24 @@ export async function GET(req, { params }) {
       bufferSize: pdfBuffer.length,
     });
 
-    const extractedText = await extractTextFromPDF(pdfBuffer);
+    const result = await extractTextFromPDF(pdfBuffer);
 
-    console.log("Extracted text length:", extractedText.length);
+    console.log("Extraction result:", { 
+      textLength: result.text?.length || 0, 
+      error: result.error 
+    });
+
+    if (result.error) {
+      console.error("PDF extraction failed:", result.error);
+    }
 
     return new Response(
       JSON.stringify({
-        success: true,
-        text: extractedText,
+        success: !result.error && result.text.length > 0,
+        text: result.text,
         noteId,
         uploadId: pdfUpload.id,
+        extractionError: result.error,
       }),
       {
         status: 200,

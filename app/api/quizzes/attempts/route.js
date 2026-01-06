@@ -27,7 +27,7 @@ export async function POST(req) {
     const quizAttempt = await db.quizAttempt.create({
       data: {
         userId,
-        documentId,
+        noteId: documentId,
         totalQuestions,
         score,
       },
@@ -67,7 +67,7 @@ export async function GET(req) {
     const query = db.quizAttempt.findMany({
       where: {
         userId,
-        ...(documentId && { documentId }),
+        ...(documentId && { noteId: documentId }),
       },
       take: limit,
       skip: (page - 1) * limit,
@@ -81,7 +81,7 @@ export async function GET(req) {
       db.quizAttempt.count({
         where: {
           userId,
-          ...(documentId && { documentId }),
+          ...(documentId && { noteId: documentId }),
         },
       }),
     ]);
