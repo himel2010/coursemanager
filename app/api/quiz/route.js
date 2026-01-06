@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { saveQuiz } from "@/lib/quizCache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,30 @@ export async function GET() {
   return NextResponse.json({ ok: true, route: "/api/quiz" });
 }
 
+// Helper to check if content is readable text (not garbled binary)
+function isReadableContent(text) {
+  if (!text || typeof text !== 'string') return false;
+  
+  // Count readable ASCII characters vs non-readable
+  let readable = 0;
+  let nonReadable = 0;
+  
+  for (let i = 0; i < Math.min(text.length, 1000); i++) {
+    const code = text.charCodeAt(i);
+    // Readable: letters, numbers, common punctuation, spaces, newlines
+    if ((code >= 32 && code <= 126) || code === 10 || code === 13 || code === 9) {
+      readable++;
+    } else if (code > 127) {
+      nonReadable++;
+    }
+  }
+  
+  // Text should be at least 60% readable ASCII
+  const total = readable + nonReadable;
+  if (total === 0) return false;
+  return (readable / total) > 0.6;
+}
+
 export async function POST(req) {
   try {
     let body;
@@ -37,15 +62,32 @@ export async function POST(req) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { documentContent, documentTitle = "Document", numQuestions = 5 } = body ?? {};
+    const { documentContent, documentTitle = "Document", numQuestions = 5, documentId = null } = body ?? {};
     const n = sanitizeNumQuestions(numQuestions);
 
     if (!documentContent || typeof documentContent !== "string" || !documentContent.trim()) {
       return NextResponse.json({ error: "Document content required" }, { status: 400 });
     }
 
+    // Validate that content is readable (not garbled binary)
+    if (!isReadableContent(documentContent)) {
+      return NextResponse.json({ 
+        error: "Document content appears to be corrupted or unreadable. Please try a different document or ensure the PDF contains extractable text." 
+      }, { status: 400 });
+    }
+
+    // If no AI key is configured, fall back to strict doc-only generation.
     if (!OPENROUTER_API_KEY) {
-      return NextResponse.json({ error: "OpenRouter API key missing. Set OPENROUTER_API_KEY or QWEN_API_KEY." }, { status: 500 });
+      const fallback = buildFallbackQuiz({ documentTitle, documentContent, numQuestions: n });
+      if (documentId) {
+        saveQuiz(documentId, {
+          source: 'fallback',
+          documentTitle,
+          sections: { questions: fallback.sections?.questions || [], mcq: fallback.questions },
+          quiz: fallback
+        });
+      }
+      return NextResponse.json({ success: true, quiz: fallback });
     }
 
     // Keep prompts within safe token budget
@@ -183,6 +225,34 @@ CONTENT END`;
       };
     }).filter(q => q.question && q.options.length >= 2);
 
+    // Ensure AI MCQs have at least 4 doc-derived options; else pad from document tokens
+    const docTokens = Array.from(new Set(
+      safeContent
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w && w.length > 3)
+    ));
+    function padOptionsFromDoc(opts, min = 4) {
+      const out = [...opts];
+      const seen = new Set(out.map(o => String(o).toLowerCase().trim()));
+      for (const w of docTokens) {
+        if (out.length >= min) break;
+        if (!seen.has(w)) {
+          out.push(w[0].toUpperCase() + w.slice(1));
+          seen.add(w);
+        }
+      }
+      return out.slice(0, Math.max(min, out.length));
+    }
+    for (const q of normalized) {
+      if (!Array.isArray(q.options)) q.options = [];
+      if (q.options.length < 4) {
+        q.options = padOptionsFromDoc(q.options, 4);
+        if (q.correctOption < 0 || q.correctOption >= q.options.length) q.correctOption = 0;
+      }
+    }
+
     // Sentence-level grounding for stems: map each MCQ to a source sentence
     function normalizeForMatch(s) {
       return String(s).toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
@@ -232,9 +302,10 @@ CONTENT END`;
       return on.length > 1 && docNorm.includes(on);
     }));
 
-    if (!mcqDocValid || !stemsDocValid) {
+    if (!mcqDocValid || !stemsDocValid || normalized.some(q => !Array.isArray(q.options) || q.options.length < 2)) {
       // Fall back to strict doc-only generator
       const fallback = buildFallbackQuiz({ documentTitle, documentContent: safeContent, numQuestions: n });
+      if (documentId) { saveQuiz(documentId, { source: 'fallback', documentTitle, sections: { questions: fallback.sections?.questions || [], mcq: fallback.questions }, quiz: fallback }); }
       return NextResponse.json({ success: true, quiz: fallback });
     }
 
@@ -255,7 +326,7 @@ CONTENT END`;
       return NextResponse.json({ success: true, quiz: fallback });
     }
 
-    return NextResponse.json({
+    const result = {
       success: true,
       quiz: {
         title: `Quiz: ${documentTitle}`,
@@ -268,7 +339,14 @@ CONTENT END`;
           mcq: normalized
         }
       }
-    });
+    };
+
+    // Save AI-derived quiz to cache for later retrieval
+    if (documentId) {
+      saveQuiz(documentId, { source: 'ai', documentTitle, sections: { questions: normalizedFree, mcq: normalized }, raw: quiz });
+    }
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("/api/quiz error:", error);
     return NextResponse.json({ error: error.message || "Failed to generate quiz" }, { status: 500 });
@@ -335,6 +413,28 @@ function buildFallbackQuiz({ documentTitle, documentContent, numQuestions = 5 })
     .map(capitalize)
     .slice(0, 500);
 
+  // If the document is too short to form sentences, fall back to token-choice MCQs.
+  function makeTokenChoice(i) {
+    const pool = docWords.length ? docWords : uniq(words).map(capitalize);
+    const chosen = shuffle(pick(pool, 4));
+    const correct = chosen[0] || pool[0] || "content";
+    const options = ensureOptionsUnique(chosen.length ? chosen : [correct], 4, pool);
+    const correctOption = Math.max(0, options.findIndex(o => normalizeOptionText(o) === normalizeOptionText(correct)));
+    return {
+      question: 'Which of the following words/terms appears in the document?',
+      options,
+      correctOption,
+      explanation: 'The correct option is an exact term found in the provided document text.',
+      sourceIndex: 0,
+    };
+  }
+
+  function findOptionIndex(options, target) {
+    const t = normalizeOptionText(target);
+    const idx = options.findIndex(o => normalizeOptionText(o) === t);
+    return idx >= 0 ? idx : 0;
+  }
+
   function normalizeOptionText(s) {
     return String(s).toLowerCase().replace(/\s+/g, ' ').replace(/[^a-z0-9 ]/g, '').trim();
   }
@@ -376,32 +476,37 @@ function buildFallbackQuiz({ documentTitle, documentContent, numQuestions = 5 })
 
   // Strict doc-only MCQ generators
   function makeClozeStrict(i) {
+    if (!sentences.length) return makeTokenChoice(i);
     const base = sentences[i % sentences.length] || sentences[0] || "";
     const tokenList = base.split(/\s+/).filter(t => t.length > 4 && !stopwords.has(t.toLowerCase()));
     let target = tokenList[Math.floor(Math.random() * tokenList.length)] || tokenList[0];
     if (!target) {
       // pick a word from the document strictly
       target = docWords[0];
-      if (!target) return makeSentenceChoice(i);
+      if (!target) return makeTokenChoice(i);
     }
+    const targetDisplay = capitalize(String(target));
     const question = base.replace(target, "_____ ");
     const distractorsDoc = pick(docWords.filter(w => w.toLowerCase() !== String(target).toLowerCase()), 10);
-    const options = ensureOptionsUnique(shuffle([capitalize(target), ...distractorsDoc]).slice(0, 4), 4, docWords);
+    const options = ensureOptionsUnique(shuffle([targetDisplay, ...distractorsDoc]).slice(0, 4), 4, docWords);
     return {
       question: `Fill in the blank: ${question}`,
       options,
-      correctOption: options.indexOf(target) < 0 ? 0 : options.indexOf(target),
+      correctOption: findOptionIndex(options, targetDisplay),
       explanation: `From the document sentence: ${base.slice(0, 120)}`,
       sourceIndex: i % sentences.length,
     };
   }
 
   function makeSentenceChoice(i) {
+    if (!sentences.length) return makeTokenChoice(i);
     const correct = sentences[i % sentences.length] || sentences[0] || "";
     const tokenList = correct.split(/\s+/).filter(t => t.length > 4 && !stopwords.has(t.toLowerCase()));
     let cue = tokenList[Math.floor(Math.random() * tokenList.length)] || tokenList[0];
-    if (!cue) cue = (keywords[0] || words.find(w => w.length > 4) || "Topic");
+    if (!cue) cue = (docWords[0] || (correct.split(/\s+/).find(w => w.length > 4) ?? "content"));
     const sentencePool = uniq(sentences.filter(s => s && s.length > 10));
+    // If we don't have enough sentences to build options, fall back to token-choice.
+    if (sentencePool.length < 2) return makeTokenChoice(i);
     const distractorSentences = pick(sentencePool.filter(s => s !== correct), 10);
     const options = ensureOptionsUnique(shuffle([correct, ...distractorSentences]).slice(0, 4), 4, sentencePool);
     const idx = options.indexOf(correct);
@@ -413,62 +518,8 @@ function buildFallbackQuiz({ documentTitle, documentContent, numQuestions = 5 })
       sourceIndex: i % sentences.length,
     };
   }
-
-  function makeClozeQuestion(i) {
-    const base = sentences[i % sentences.length] || sentences[0] || "";
-    const tokenList = base.split(/\s+/).filter(t => t.length > 4 && !stopwords.has(t.toLowerCase()));
-    const target = tokenList[Math.floor(Math.random() * tokenList.length)] || tokenList[0] || "term";
-    const question = base.replace(target, "_____ ");
-    const distractorWords = pick(keywords.filter(w => w !== target.toLowerCase()), 6)
-      .map(w => w[0].toUpperCase() + w.slice(1));
-    while (distractorWords.length < 3) {
-      distractorWords.push("Concept");
-    }
-    const options = shuffle([target, ...distractorWords.slice(0, 3)]);
-    return {
-      question: `Fill in the blank: ${question}`,
-      options,
-      correctOption: options.indexOf(target),
-      explanation: `Correct word from the sentence: ${target}`,
-    };
-  }
-
-  function makeScenarioMath(i) {
-    // Build a small scenario leveraging numbers in the text
-    const a = numbers[0] ?? 2;
-    const b = numbers[1] ?? 3;
-    const name = nameSeed[i % nameSeed.length];
-    const actionAdd = true; // prefer addition to avoid negatives
-    const scenario = `${name} had ${a} items and ${actionAdd ? "received" : "gave away"} ${b} more.`;
-    const answer = a + b;
-    const options = shuffle([answer, answer + 1, answer - 1, answer + (actionAdd ? -2 : 2)]).map(x => String(x));
-    return {
-      question: `${scenario} How many items does ${name} have now?`,
-      options,
-      correctOption: options.indexOf(String(answer)),
-      explanation: `${a} ${actionAdd ? "+" : "-"} ${b} = ${answer}`,
-    };
-  }
-
-  function makeScenarioMath(i) {
-    const a = numbers[0] ?? 2;
-    const b = numbers[1] ?? 3;
-    const name = nameSeed[i % nameSeed.length];
-    const actionAdd = true;
-    const scenario = `${name} had ${a} items and ${actionAdd ? "received" : "gave away"} ${b} more.`;
-    const answer = a + b;
-    const options = ensureOptionsUnique(shuffle([String(answer), String(answer + 1), String(answer - 1), String(answer + (actionAdd ? -2 : 2))]), 4);
-    return {
-      question: `${scenario} How many items does ${name} have now?`,
-      options,
-      correctOption: options.indexOf(String(answer)) < 0 ? 0 : options.indexOf(String(answer)),
-      explanation: `Computed using numbers present in the document`,
-      sourceIndex: 0,
-    };
-  }
-
-  const hasNumbers = numbers.length >= 2;
-  const generators = hasNumbers ? [makeScenarioMath, makeClozeStrict, makeSentenceChoice] : [makeClozeStrict, makeSentenceChoice];
+  // Only use document-derived question generators - no external/synthetic questions
+  const generators = [makeClozeStrict, makeSentenceChoice];
   const pickGenerator = (i) => generators[i % generators.length];
   const target = sanitizeNumQuestions(numQuestions);
   const questions = [];
@@ -498,6 +549,45 @@ function buildFallbackQuiz({ documentTitle, documentContent, numQuestions = 5 })
     questions.push({ id: i + 1, ...q });
   }
 
+  // Deduplicate questions and ensure options are present
+  const seenStems = new Set();
+  const usedIndices = new Set();
+  const uniqueQuestions = [];
+  for (const q of questions) {
+    const key = String(q.question).toLowerCase().replace(/\s+/g, ' ').trim();
+    if (seenStems.has(key)) continue;
+    seenStems.add(key);
+    if (typeof q.sourceIndex === 'number') usedIndices.add(q.sourceIndex);
+    // Ensure options
+    if (!Array.isArray(q.options) || q.options.length < 4) {
+      const idx = typeof q.sourceIndex === 'number' ? q.sourceIndex : uniqueQuestions.length % sentences.length;
+      const fix = makeSentenceChoice(idx);
+      q.question = fix.question;
+      q.options = ensureOptionsUnique(fix.options, 4, sentences);
+      q.correctOption = (fix.correctOption < 0 || fix.correctOption >= q.options.length) ? 0 : fix.correctOption;
+      q.explanation = fix.explanation;
+      q.sourceIndex = fix.sourceIndex;
+    }
+    uniqueQuestions.push(q);
+  }
+  // If not enough unique questions, fill from remaining sentence indices
+  let fillIdx = 0;
+  while (uniqueQuestions.length < target && fillIdx < Math.max(1, sentences.length)) {
+    if (!usedIndices.has(fillIdx)) {
+      const nq = sentences.length ? makeSentenceChoice(fillIdx) : makeTokenChoice(fillIdx);
+      uniqueQuestions.push({
+        id: uniqueQuestions.length + 1,
+        question: nq.question,
+        options: ensureOptionsUnique(nq.options, 4, sentences),
+        correctOption: (nq.correctOption < 0 || nq.correctOption >= 4) ? 0 : nq.correctOption,
+        explanation: nq.explanation,
+        sourceIndex: nq.sourceIndex,
+      });
+      usedIndices.add(fillIdx);
+    }
+    fillIdx++;
+  }
+
   // Build a set of open-ended questions from document sentences
   const freeQuestions = [];
   const stems = sentences.slice(0, Math.max(5, target));
@@ -510,11 +600,11 @@ function buildFallbackQuiz({ documentTitle, documentContent, numQuestions = 5 })
   return {
     title: `Quiz: ${documentTitle}`,
     documentTitle,
-    questions,
-    totalQuestions: questions.length,
+    questions: uniqueQuestions,
+    totalQuestions: uniqueQuestions.length,
     sections: {
       questions: freeQuestions,
-      mcq: questions,
+      mcq: uniqueQuestions,
     },
   };
 }

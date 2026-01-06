@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, RotateCcw, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, Download, AlertCircle } from "lucide-react";
 
 export default function QuizTaker({ quiz, onBack, onQuizComplete = null }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -10,9 +10,47 @@ export default function QuizTaker({ quiz, onBack, onQuizComplete = null }) {
   const [loading, setLoading] = useState(false);
   const [isSavingResults, setIsSavingResults] = useState(false);
 
+  // Safety check for quiz questions
+  if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg text-center">
+        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">No Questions Available</h2>
+        <p className="text-gray-600 mb-4">
+          The quiz could not be generated. This may be because the document has insufficient content.
+        </p>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
   const currentQuestion = quiz.questions[currentIndex];
   const currentAnswer = answers[currentIndex];
   const currentEvaluation = evaluations[currentIndex];
+
+  // Safety check for current question
+  if (!currentQuestion || !currentQuestion.options) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg text-center">
+        <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Invalid Question</h2>
+        <p className="text-gray-600 mb-4">
+          This question appears to be invalid. Please try regenerating the quiz.
+        </p>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
 
   const handleSelectOption = (optionIndex) => {
     if (!showResults) {

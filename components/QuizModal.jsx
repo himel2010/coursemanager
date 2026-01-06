@@ -1,13 +1,96 @@
 import React, { useState } from "react";
-import { X, BookOpen, Loader } from "lucide-react";
+import { X, BookOpen, Loader, FileText, AlertCircle, CheckCircle } from "lucide-react";
 import QuizTaker from "./QuizTaker";
+
+// Helper function to extract text from TipTap JSON content
+function extractTextFromTipTap(content) {
+  if (!content) return "";
+  
+  // If it's already a string, return it
+  if (typeof content === "string") {
+    return content;
+  }
+  
+  // If it's not an object, convert to string
+  if (typeof content !== "object") {
+    return String(content);
+  }
+  
+  // Handle PDF content structure
+  if (content.type === "pdf" && content.text) {
+    return content.text;
+  }
+  
+  // Handle TipTap JSON structure
+  const extractFromNode = (node) => {
+    if (!node) return "";
+    
+    let text = "";
+    
+    // Extract text from the node itself
+    if (node.text) {
+      text += node.text;
+    }
+    
+    // Recursively extract from content array
+    if (Array.isArray(node.content)) {
+      for (const child of node.content) {
+        text += extractFromNode(child);
+      }
+      // Add newlines between paragraphs, headings, list items
+      if (["paragraph", "heading", "listItem", "blockquote"].includes(node.type)) {
+        text += "\n";
+      }
+    }
+    
+    return text;
+  };
+  
+  // If it's a TipTap doc structure
+  if (content.type === "doc" && Array.isArray(content.content)) {
+    return extractFromNode(content).trim();
+  }
+  
+  // Handle pages structure (multi-page documents)
+  if (content.pages && typeof content.pages === "object") {
+    const pageTexts = [];
+    for (const pageKey of Object.keys(content.pages).sort()) {
+      const pageContent = content.pages[pageKey];
+      const pageText = extractTextFromTipTap(pageContent);
+      if (pageText) {
+        pageTexts.push(pageText);
+      }
+    }
+    return pageTexts.join("\n\n").trim();
+  }
+  
+  // Fallback: try to stringify and extract any readable text
+  try {
+    const jsonStr = JSON.stringify(content);
+    // Extract all text values from the JSON
+    const textMatches = jsonStr.match(/"text"\s*:\s*"([^"]+)"/g) || [];
+    const texts = textMatches.map(m => {
+      const match = m.match(/"text"\s*:\s*"([^"]+)"/);
+      return match ? match[1] : "";
+    });
+    if (texts.length > 0) {
+      return texts.join(" ").trim();
+    }
+  } catch (e) {
+    // Ignore JSON stringify errors
+  }
+  
+  return "";
+}
 
 export default function QuizModal({ isOpen, onClose, documents = [], courseId }) {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingDocId, setLoadingDocId] = useState(null);
   const [error, setError] = useState("");
   const [numQuestions, setNumQuestions] = useState(10);
+  const [statusMessage, setStatusMessage] = useState("");
 
   const handleGenerateQuiz = async (doc) => {
     if (!doc.id || !doc.title) {
@@ -16,7 +99,9 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
     }
 
     setLoading(true);
+    setLoadingDocId(doc.id);
     setError("");
+    setStatusMessage("Fetching document...");
 
     try {
       // Fetch the document content
@@ -32,40 +117,75 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
         throw new Error(`Invalid response from server`);
       }
 
-      let content = docData.content || "";
-
-      // Convert content to string if it's an object
-      if (typeof content === "object" && content !== null) {
-        // If it's a PDF or has type field, extract text content
-        if (content.type === "pdf" || content.text) {
-          content = content.text || `Document: ${doc.title}\nNote: PDF content needs to be extracted`;
-        } else {
-          // Convert object to string
-          content = JSON.stringify(content);
+      // Extract text content from the document
+      let content = extractTextFromTipTap(docData.content);
+      
+      // Check if this is a PDF document that needs text extraction
+      const isPDF = docData.noteType === "SCANNED" || 
+                    docData.content?.type === "pdf" || 
+                    (docData.uploads && docData.uploads.length > 0 && 
+                     docData.uploads.some(u => u.fileType === "application/pdf"));
+      
+      // If no content and it's a PDF, try to extract text from PDF
+      if (!content.trim() && isPDF) {
+        setStatusMessage("Extracting text from PDF...");
+        
+        try {
+          const extractResponse = await fetch(`/api/notes/${doc.id}/extract-text`);
+          const extractData = await extractResponse.json();
+          
+          if (extractResponse.ok) {
+            if (extractData.text && extractData.text.trim()) {
+              content = extractData.text;
+              console.log("Extracted PDF text length:", content.length);
+              console.log("Sample:", content.substring(0, 200));
+            } else {
+              console.warn("PDF extraction returned empty text");
+            }
+          } else {
+            console.warn("PDF text extraction failed:", extractResponse.status, extractData.error);
+          }
+        } catch (extractError) {
+          console.error("Error extracting PDF text:", extractError);
+        }
+      }
+      
+      // If document has no extracted text content, check uploads for extractedText field
+      if (!content.trim() && docData.uploads && docData.uploads.length > 0) {
+        const upload = docData.uploads[0];
+        if (upload && upload.extractedText) {
+          content = upload.extractedText;
+        }
+      }
+      
+      // If still no content, try using the title and any available metadata
+      if (!content.trim()) {
+        // Check for text in various possible locations
+        if (docData.topic) {
+          content = `Topic: ${docData.topic}\n`;
+        }
+        if (docData.tags && docData.tags.length > 0) {
+          content += `Tags: ${docData.tags.join(", ")}\n`;
+        }
+        
+        // Last resort - provide helpful error
+        if (!content.trim()) {
+          if (isPDF) {
+            throw new Error("Could not extract text from this PDF. The PDF may be scanned or image-based. Try a text-based PDF or document.");
+          }
+          throw new Error("This document has no text content. Please add some content to generate a quiz.");
         }
       }
 
-      // Ensure content is a string
-      if (typeof content !== "string") {
-        content = "";
-      }
+      console.log("Extracted content for quiz:", content.substring(0, 200) + "...");
+      setStatusMessage("Generating quiz questions...");
 
-      // If it's a PDF with uploads, use a placeholder
-      if ((doc.type === "pdf" || (docData.uploads && docData.uploads.length > 0)) && !content.trim()) {
-        content = `Document: ${doc.title}\nNote: PDF content. Please ensure the document has extractable text for quiz generation.`;
-      }
-
-      if (!content || !content.trim()) {
-        setError("Document has no content to generate quiz from");
-        setLoading(false);
-        return;
-      }
-
-      // Generate quiz using Qwen 3 (new stable route)
+      // Generate quiz
       const quizResponse = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
+          documentId: doc.id,
           documentContent: content,
           documentTitle: doc.title,
           numQuestions: parseInt(numQuestions),
@@ -74,12 +194,13 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
 
       // Check status BEFORE reading the body
       if (!quizResponse.ok) {
+        const errorText = await quizResponse.text();
+        console.error("Quiz API error:", errorText);
         throw new Error(`Server error (${quizResponse.status}): Failed to generate quiz`);
       }
 
       let quizData;
       try {
-        // Now safely parse response as JSON
         quizData = await quizResponse.json();
       } catch (e) {
         throw new Error(`Invalid quiz response: ${e.message}`);
@@ -89,6 +210,11 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
         throw new Error("No quiz data returned from server");
       }
 
+      // Validate that quiz has questions
+      if (!quizData.quiz.questions || quizData.quiz.questions.length === 0) {
+        throw new Error("Quiz generated but contains no questions. Try a document with more content.");
+      }
+
       setQuiz({ ...quizData.quiz, documentId: doc.id });
       setSelectedDoc(doc);
     } catch (err) {
@@ -96,6 +222,8 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
       setError(err.message || "Failed to generate quiz");
     } finally {
       setLoading(false);
+      setLoadingDocId(null);
+      setStatusMessage("");
     }
   };
 
@@ -103,6 +231,7 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
     setQuiz(null);
     setSelectedDoc(null);
     setError("");
+    setStatusMessage("");
   };
 
   if (!isOpen) return null;
@@ -169,7 +298,7 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
               {/* Document List */}
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-3">
-                  Select a Document
+                  Select a Document to Generate Quiz
                 </h3>
                 {documents.length === 0 ? (
                   <div className="text-center py-8">
@@ -181,34 +310,55 @@ export default function QuizModal({ isOpen, onClose, documents = [], courseId })
                   </div>
                 ) : (
                   <div className="grid gap-3">
-                    {documents.map((doc) => (
-                      <button
-                        key={doc.id}
-                        onClick={() => handleGenerateQuiz(doc)}
-                        disabled={loading}
-                        className="text-left p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-md transition disabled:opacity-50"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">{doc.title}</p>
-                            <p className="text-sm text-gray-500 mt-1">
-                              {doc.type === "pdf" ? "📄 PDF" : "📝 Text"}
-                            </p>
-                            {doc.course && (
-                              <p className="text-xs text-gray-400 mt-1">
-                                {doc.course.code}
+                    {documents.map((doc) => {
+                      const isPDF = doc.noteType === "SCANNED" || doc.content?.type === "pdf";
+                      const isLoadingThis = loadingDocId === doc.id;
+                      
+                      return (
+                        <button
+                          key={doc.id}
+                          onClick={() => handleGenerateQuiz(doc)}
+                          disabled={loading}
+                          className={`text-left p-4 border rounded-lg transition ${
+                            isLoadingThis 
+                              ? "border-blue-400 bg-blue-50 shadow-md" 
+                              : "border-gray-200 hover:border-blue-400 hover:shadow-md"
+                          } disabled:cursor-not-allowed`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <FileText className={`w-4 h-4 ${isPDF ? "text-red-500" : "text-blue-500"}`} />
+                                <p className="font-medium text-gray-900">{doc.title || "Untitled"}</p>
+                              </div>
+                              <p className="text-sm text-gray-500 mt-1">
+                                {isPDF ? "📄 PDF Document" : "📝 Text Document"}
                               </p>
+                              {doc.course && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  Course: {doc.course.code}
+                                </p>
+                              )}
+                              {doc.topic && (
+                                <p className="text-xs text-gray-400">
+                                  Topic: {doc.topic}
+                                </p>
+                              )}
+                            </div>
+                            {isLoadingThis && (
+                              <div className="flex flex-col items-end gap-1 ml-2">
+                                <div className="flex items-center gap-2">
+                                  <Loader className="w-5 h-5 animate-spin text-blue-500" />
+                                  <span className="text-sm text-blue-600 font-medium">
+                                    {statusMessage || "Generating..."}
+                                  </span>
+                                </div>
+                              </div>
                             )}
                           </div>
-                          {loading && (
-                            <div className="flex items-center gap-2">
-                              <Loader className="w-4 h-4 animate-spin text-blue-500" />
-                              <span className="text-xs text-blue-600">Generating...</span>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
