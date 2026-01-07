@@ -10,34 +10,35 @@ datasource db {
 }
 
 model User {
-  id               String            @id @db.Uuid
-  email            String            @unique
-  name             String?
-  role             UserRole?         @default(STUDENT)
-  studentId        String?           @unique
-  departmentId     String?           @db.Uuid
-  isFinalYear      Boolean?          @default(false)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime?         @updatedAt
-  calendarEvents   CalendarEvent[]
-  chatMessages     ChatMessage[]
-  enrollments      Enrollment[]
-  forumComments    ForumComment[]
-  forumPosts       ForumPost[]
-  groupMemberships GroupMembership[]
-  notes            Note[]
-  quizAttempts     QuizAttempt[]
-  uploads          Upload[]
-  pages            Page[]
-  studentApplications StudentApplication[]
-  createdThesisGroups ThesisGroup[] @relation("ThesisGroupCreator")
-  groupMembers      GroupMember[] @relation("GroupMember")
-  joinRequests      GroupJoinRequest[] @relation("JoinRequest")
-  department       Department?       @relation(fields: [departmentId], references: [id])
-  createdEventGroups  EventGroup[]         @relation("EventGroupCreator")
-  eventGroupMemberships EventGroupMember[] @relation("EventGroupMembership")
-  sentGroupInvites    GroupInvite[]        @relation("group_invites_inviterIdTousers")
-  receivedGroupInvites GroupInvite[]       @relation("group_invites_inviteeIdTousers")
+  id                    String               @id @db.Uuid
+  email                 String               @unique
+  name                  String?
+  role                  UserRole?            @default(STUDENT)
+  studentId             String?              @unique
+  departmentId          String?              @db.Uuid
+  isFinalYear           Boolean?             @default(false)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime?            @updatedAt
+  calendarEvents        CalendarEvent[]
+  chatMessages          ChatMessage[]
+  enrollments           Enrollment[]
+  forumComments         ForumComment[]
+  forumPosts            ForumPost[]
+  groupMemberships      GroupMembership[]
+  notes                 Note[]
+  quizAttempts          QuizAttempt[]
+  uploads               Upload[]
+  pages                 Page[]
+  studentApplications   StudentApplication[]
+  createdThesisGroups   ThesisGroup[]        @relation("ThesisGroupCreator")
+  groupMembers          GroupMember[]        @relation("GroupMember")
+  joinRequests          GroupJoinRequest[]   @relation("JoinRequest")
+  department            Department?          @relation(fields: [departmentId], references: [id])
+  createdEventGroups    EventGroup[]         @relation("EventGroupCreator")
+  eventGroupMemberships EventGroupMember[]   @relation("EventGroupMembership")
+  sentGroupInvites      GroupInvite[]        @relation("group_invites_inviterIdTousers")
+  receivedGroupInvites  GroupInvite[]        @relation("group_invites_inviteeIdTousers")
+  Wishlist              Wishlist[]
 
   @@map("users")
   @@schema("public")
@@ -81,6 +82,7 @@ model Semester {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   coursesOffered CourseOffered[]
+  Wishlist       Wishlist[]
 
   @@unique([season, year])
   @@map("semesters")
@@ -106,9 +108,9 @@ model Course {
 }
 
 model CourseOffered {
-  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  courseId          String         @db.Uuid
-  semesterId        String         @db.Uuid
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId          String          @db.Uuid
+  semesterId        String          @db.Uuid
   section           String
   roomNumber        String?
   classSchedule     Json?
@@ -118,26 +120,27 @@ model CourseOffered {
   finalDate         DateTime?
   finalTime         String?
   finalRoom         String?
-  theoryFacultyId   String?        @db.Uuid
-  labFaculty1Id     String?        @db.Uuid
-  labFaculty2Id     String?        @db.Uuid
-  theoryFaculty     Faculty?       @relation("TheoryFaculty", fields: [theoryFacultyId], references: [id])
-  labFaculty1       Faculty?       @relation("LabFaculty1", fields: [labFaculty1Id], references: [id])
-  labFaculty2       Faculty?       @relation("LabFaculty2", fields: [labFaculty2Id], references: [id])
+  theoryFacultyId   String?         @db.Uuid
+  labFaculty1Id     String?         @db.Uuid
+  labFaculty2Id     String?         @db.Uuid
+  theoryFaculty     Faculty?        @relation("TheoryFaculty", fields: [theoryFacultyId], references: [id])
+  labFaculty1       Faculty?        @relation("LabFaculty1", fields: [labFaculty1Id], references: [id])
+  labFaculty2       Faculty?        @relation("LabFaculty2", fields: [labFaculty2Id], references: [id])
   consultationHours Json?
   maxStudents       Int?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  eventGroups EventGroup[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  eventGroups       EventGroup[]
   assignments       Assignment[]
   chatChannel       ChatChannel?
-  course            Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  semester          Semester       @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  course            Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  semester          Semester        @relation(fields: [semesterId], references: [id], onDelete: Cascade)
   enrollments       Enrollment[]
   projectGroups     ProjectGroup[]
   quizzes           Quiz[]
   resources         Resource[]
   events            CalendarEvent[]
+  Wishlist          Wishlist[]
 
   @@unique([courseId, semesterId, section])
   @@index([semesterId])
@@ -239,7 +242,7 @@ model Upload {
   fileUrl   String?
   fileType  String
   fileSize  Int
-  pdfData   Bytes?   // Binary data for PDF files
+  pdfData   Bytes? // Binary data for PDF files
   createdAt DateTime @default(now())
   note      Note?    @relation(fields: [noteId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -251,28 +254,27 @@ model Upload {
 }
 
 model CalendarEvent {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId          String    @db.Uuid
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String        @db.Uuid
   title           String
   description     String?
   eventType       EventType
-  pageId          String?   @unique @db.Uuid
-  page            Page?     @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  pageId          String?       @unique @db.Uuid
+  page            Page?         @relation(fields: [pageId], references: [id], onDelete: SetNull)
   startTime       DateTime
-  includeTime     Boolean?  @default(false)
+  includeTime     Boolean?      @default(false)
   endTime         DateTime?
   location        String?
   reminderTime    DateTime?
-  group           Boolean?   @default(false)
-  isImported      Boolean   @default(false)
-  courseOfferedId String    @db.Uuid
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  eventGroups EventGroup[]
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group           Boolean?      @default(false)
+  isImported      Boolean       @default(false)
+  courseOfferedId String        @db.Uuid
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  eventGroups     EventGroup[]
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   courseOffered   CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
-  
-  
+
   @@index([userId])
   @@index([courseOfferedId])
   @@index([startTime])
@@ -287,12 +289,12 @@ model Page {
   id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   content       Json
   isPublished   Boolean        @default(true)
-  calendarEvent CalendarEvent? 
+  calendarEvent CalendarEvent?
   userId        String         @db.Uuid
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  eventGroup EventGroup?
+  eventGroup    EventGroup?
 
   @@map("pages")
   @@schema("public")
@@ -400,9 +402,9 @@ model Wishlist {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseOffered   CourseOffered  @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
-  semester        Semester       @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseOffered CourseOffered @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  semester      Semester      @relation(fields: [semesterId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseOfferedId, semesterId])
   @@index([userId])
