@@ -3,6 +3,7 @@ import { CourseDisplay } from "@/components/CourseDisplay"
 import { EventPageEditor } from "@/components/EventPageEditor"
 import MainCalendarView from "@/components/MainCalendarView"
 import ProfileHeader from "@/components/profile-header"
+import QuizAnalytics from "@/components/QuizAnalytics"
 import { Button } from "@/components/ui/button"
 
 import { useAuth } from "@/lib/auth/AuthContext"
@@ -43,9 +44,9 @@ const UserDashboard = () => {
           📝 Notes
         </Button>
       </div>
+      <QuizAnalytics />
       <MainCalendarView upcoming={true} />
       <CourseDisplay courses={courses} />
-      <Button variant={"outline"}>asd</Button>
     </div>
   )
 }

@@ -1,23 +1,124 @@
-import React from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+"use client";
 
-const HelpPage = () => {
+import React, { useState, useEffect } from "react";
+import { Plus, BookOpen } from "lucide-react";
+import HelpSearch from "@/components/HelpSearch";
+import CreateHelpArticleModal from "@/components/CreateHelpArticleModal";
+
+export default function HelpPage() {
+  const [courseId, setCourseId] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUserCourses();
+  }, []);
+
+  const fetchUserCourses = async () => {
+    try {
+      const response = await fetch("/api/set-user");
+      const userData = await response.json();
+
+      if (userData.user && userData.user.enrolledCourses) {
+        setCourses(userData.user.enrolledCourses);
+        if (userData.user.enrolledCourses.length > 0) {
+          setCourseId(userData.user.enrolledCourses[0].id);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateSuccess = () => {
+    setShowCreateModal(false);
+    // Optionally: refresh the help articles list
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6 md:p-12">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">Help & Support</h1>
-          <p className="text-lg text-slate-600 dark:text-slate-300">
-            Find answers to common questions and learn how to use Course Manager effectively.
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BookOpen className="w-8 h-8 text-blue-600" />
+              <h1 className="text-3xl font-bold text-gray-900">Help & Knowledge Base</h1>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+            >
+              <Plus className="w-4 h-4" />
+              Create Article
+            </button>
+          </div>
+          <p className="text-gray-600 mt-2">
+            Find answers to common questions and learn from shared solutions
           </p>
         </div>
+      </div>
 
-        {/* Getting Started Section */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Getting Started</CardTitle>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {courses.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">
+              You're not enrolled in any courses yet.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Course Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Course
+              </label>
+              <select
+                value={courseId || ""}
+                onChange={(e) => setCourseId(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Choose a course...</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.code} - {course.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Help Search */}
+            {courseId && (
+              <div className="bg-white rounded-lg shadow">
+                <HelpSearch courseId={courseId} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Create Article Modal */}
+      <CreateHelpArticleModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        courseId={courseId}
+        onSuccess={handleCreateSuccess}
+      />
+    </div>
+  );
+}
             <CardDescription>Learn the basics of Course Manager</CardDescription>
           </CardHeader>
           <CardContent>

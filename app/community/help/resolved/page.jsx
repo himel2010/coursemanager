@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth/AuthContext"
+import SaveToHelpButton from "@/components/SaveToHelpButton"
 
 export default function ResolvedQNAPage() {
     const [selectedCourseId, setSelectedCourseId] = useState("")
@@ -130,6 +131,14 @@ export default function ResolvedQNAPage() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Save to Help Button */}
+                            <div className="mt-4 pt-4 border-t">
+                                <SaveToHelpButton 
+                                    forumPost={{ id: p.id, title: p.title, content: p.body }} 
+                                    courseId={selectedCourseId}
+                                />
+                            </div>
                         </div>
                     ))}
                 </div>

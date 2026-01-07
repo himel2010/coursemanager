@@ -26,10 +26,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, MoreVertical, Trash2, Share2, X, Download, FileText, Eye } from "lucide-react";
+import { Plus, Search, MoreVertical, Trash2, Share2, X, Download, FileText, Eye, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { PDFUploadModal } from "./PDFUploadModal";
+import QuizModal from "./QuizModal";
 
 export function DocumentList({ userId, organizationId }) {
   const router = useRouter();
@@ -44,6 +45,7 @@ export function DocumentList({ userId, organizationId }) {
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showQuizModal, setShowQuizModal] = useState(false);
 
   // Load documents from database
   useEffect(() => {
@@ -189,6 +191,13 @@ export function DocumentList({ userId, organizationId }) {
         </div>
 
         <div className="flex gap-2">
+          <Button
+            onClick={() => setShowQuizModal(true)}
+            variant="outline"
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Generate Quiz
+          </Button>
           <Dialog open={isCreating} onOpenChange={setIsCreating}>
             <DialogTrigger asChild>
               <Button>
@@ -460,6 +469,14 @@ export function DocumentList({ userId, organizationId }) {
           )}
         </div>
       )}
+
+      {/* Quiz Modal */}
+      <QuizModal
+        isOpen={showQuizModal}
+        onClose={() => setShowQuizModal(false)}
+        documents={documents}
+        courseId={selectedCourse}
+      />
     </div>
   );
 }
