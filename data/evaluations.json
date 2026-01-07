@@ -1,0 +1,22 @@
+[
+  {
+    "id": "65bb2409-d85a-4894-a58d-80c1f09d7285",
+    "targetType": "course",
+    "targetId": "7803420a-6660-43f3-97c3-754ad6f56f30",
+    "targetName": "CSE260 — Section 27A",
+    "rating": 2,
+    "comments": "Valona",
+    "user": "anonymous",
+    "createdAt": 1767745935995
+  },
+  {
+    "id": "789ef36b-52b1-420b-99d8-fb506e632e19",
+    "targetType": "faculty",
+    "targetId": "Fardeen Bin Ibrahim [CFBB]",
+    "targetName": "Fardeen Bin Ibrahim [CFBB]",
+    "rating": 4,
+    "comments": "good",
+    "user": "anonymous",
+    "createdAt": 1767746256716
+  }
+]

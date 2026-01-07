@@ -49,6 +49,21 @@ export async function GET(request, { params }) {
       })
     }
 
+    // If user exists but name is missing, try to populate from Supabase metadata
+    if (user && (!user.name || user.name.trim() === "")) {
+      const metaName = authData.data.user.user_metadata?.name
+      if (metaName) {
+        try {
+          user = await db.user.update({
+            where: { id },
+            data: { name: metaName },
+          })
+        } catch (e) {
+          console.error("Failed to update user name from metadata:", e)
+        }
+      }
+    }
+
     // Then get enrollments separately to avoid complex nesting issues
     const enrollments = await db.enrollment.findMany({
       where: {

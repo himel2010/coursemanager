@@ -15,27 +15,33 @@ export async function POST(req) {
     }
 
     const data = await req.json()
-    const { name, id, dept, sem, course } = data
+    const { name, id, dept, sem, course, accountType } = data
 
     // Validate required fields
-    if (!name || !id || !dept) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      )
+    if (!name || !dept) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+    // If student, student ID is required
+    if (accountType === "student" && !id) {
+      return NextResponse.json({ error: "Student ID required for students" }, { status: 400 })
     }
     const { department, activeSemester, existingEnrollments } =
       await getDeptSem(user, dept)
 
-    const updatedUser = await setUserInfo(user, name, id, department)
+    const updatedUser = await setUserInfo(user, name, id, department, accountType)
 
-    const response = await updateCourses(
-      updatedUser,
-      sem,
-      course,
-      activeSemester,
-      existingEnrollments
-    )
+    let response
+    if (accountType === "student") {
+      response = await updateCourses(
+        updatedUser,
+        sem,
+        course,
+        activeSemester,
+        existingEnrollments
+      )
+    } else {
+      response = NextResponse.json({ success: true, user: updatedUser, message: "Faculty profile updated" })
+    }
 
     console.log("Back")
 
@@ -46,21 +52,23 @@ export async function POST(req) {
   }
 }
 
-async function setUserInfo(user, name, id, department) {
+async function setUserInfo(user, name, id, department, accountType) {
+  const role = accountType === "faculty" ? "FACULTY" : "STUDENT"
   const updatedUser = await prisma.user.upsert({
     where: { id: user.id },
     update: {
       name: name,
-      studentId: id,
+      studentId: id || null,
       departmentId: department.id,
+      role: role,
     },
     create: {
       id: user.id,
       name: name,
-      studentId: id,
+      studentId: id || null,
       departmentId: department.id,
-
       email: user.email,
+      role: role,
     },
   })
   return updatedUser

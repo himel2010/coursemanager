@@ -26,12 +26,20 @@ const Header = ({ className }) => {
       href: "/",
     },
     {
+      title: "Course Offerings",
+      href: "/course-offerings",
+    },
+    {
       title: "Dashboard",
       href: "/user-dashboard",
     },
     {
       title: "Community",
       href: "#community",
+    },
+    {
+      title: "Support",
+      href: "/support",
     },
     {
       title: "Thesis Groups",

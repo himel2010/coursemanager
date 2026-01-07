@@ -33,6 +33,21 @@ const HeroSectionPage = async () => {
       {/* Main Content */}
       <main className="flex flex-col">
         <HeroSection />
+        {/* Quick links */}
+        <section className="py-6 flex justify-center gap-4">
+          <a
+            href="/cgp"
+            className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            CGP Calculator
+          </a>
+          <a
+            href="/evaluate"
+            className="inline-block px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+          >
+            Evaluate
+          </a>
+        </section>
         <section id="community">
           <CommunitySection />
         </section>
