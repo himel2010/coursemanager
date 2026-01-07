@@ -36,16 +36,13 @@ const UserDashboard = () => {
         >
           Go to Chat
         </Button>
-        <Button
-          variant="default"
-          size="sm"
-          onClick={() => redirect("/notes")}
-        >
+        <Button variant="default" size="sm" onClick={() => redirect("/notes")}>
           📝 Notes
         </Button>
       </div>
-      <QuizAnalytics />
       <MainCalendarView upcoming={true} />
+      <QuizAnalytics />
+
       <CourseDisplay courses={courses} />
     </div>
   )
