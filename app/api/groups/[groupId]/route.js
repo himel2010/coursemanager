@@ -51,7 +51,7 @@ export async function GET(request, { params }) {
             },
           },
         },
-        event: {
+        calendarEvent: {
           select: {
             id: true,
             title: true,

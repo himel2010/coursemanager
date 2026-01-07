@@ -35,9 +35,9 @@ export async function POST(request) {
     const invite = await prisma.groupInvite.findUnique({
       where: { id: inviteId },
       include: {
-        group: {
+        eventGroup: {
           include: {
-            event: true,
+            calendarEvent: true,
           },
         },
       },
@@ -85,8 +85,8 @@ export async function POST(request) {
             inviteeId: data.user.id,
             id: { not: inviteId },
             status: "PENDING",
-            group: {
-              eventId: invite.group.eventId,
+            eventGroup: {
+              eventId: invite.eventGroup.eventId,
             },
           },
           data: {

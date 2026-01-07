@@ -39,6 +39,7 @@ model User {
   sentGroupInvites      GroupInvite[]        @relation("group_invites_inviterIdTousers")
   receivedGroupInvites  GroupInvite[]        @relation("group_invites_inviteeIdTousers")
   Wishlist              Wishlist[]
+  groupChatMessages     GroupChatMessage[]   @relation("GroupChatMessages")
 
   @@map("users")
   @@schema("public")
@@ -325,6 +326,34 @@ model ChatMessage {
   @@index([channelId])
   @@index([userId])
   @@map("chat_messages")
+  @@schema("public")
+}
+
+model GroupChatChannel {
+  id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId   String             @unique @db.Uuid
+  createdAt DateTime           @default(now())
+  group     EventGroup         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  messages  GroupChatMessage[]
+
+  @@map("group_chat_channels")
+  @@schema("public")
+}
+
+model GroupChatMessage {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId String           @db.Uuid
+  userId    String           @db.Uuid
+  sender    String
+  content   String
+  imageUrl  String?
+  createdAt DateTime         @default(now())
+  channel   GroupChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user      User             @relation("GroupChatMessages", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@index([userId])
+  @@map("group_chat_messages")
   @@schema("public")
 }
 
@@ -627,21 +656,22 @@ model QuizAttempt {
 }
 
 model EventGroup {
-  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String
-  eventId         String             @db.Uuid
-  courseOfferedId String             @db.Uuid
-  creatorId       String             @db.Uuid
-  pageId          String?            @unique @db.Uuid
-  isLocked        Boolean            @default(false)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  members         EventGroupMember[]
-  courseOffered   CourseOffered      @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
-  creator         User               @relation("EventGroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  calendarEvent   CalendarEvent      @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  page            Page?              @relation(fields: [pageId], references: [id])
-  invites         GroupInvite[]
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  eventId          String             @db.Uuid
+  courseOfferedId  String             @db.Uuid
+  creatorId        String             @db.Uuid
+  pageId           String?            @unique @db.Uuid
+  isLocked         Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  members          EventGroupMember[]
+  courseOffered    CourseOffered      @relation(fields: [courseOfferedId], references: [id], onDelete: Cascade)
+  creator          User               @relation("EventGroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  calendarEvent    CalendarEvent      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  page             Page?              @relation(fields: [pageId], references: [id])
+  invites          GroupInvite[]
+  GroupChatChannel GroupChatChannel?
 
   @@index([creatorId])
   @@index([courseOfferedId])

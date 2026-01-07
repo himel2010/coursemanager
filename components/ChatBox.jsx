@@ -8,8 +8,14 @@ import usePartySocket from "partysocket/react"
 import { createClient } from "@/lib/supabase/client"
 import ChatNameDisplay from "./ChatNameDisplay"
 import { ScrollArea } from "./ui/scroll-area"
+import axios from "axios"
 
-const ChatBox = ({ userProfile, activeCourseID, messageCache }) => {
+const ChatBox = ({
+  userProfile,
+  activeCourseID,
+  messageCache,
+  chatType = "course",
+}) => {
   const supabase = createClient()
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState([])
@@ -18,12 +24,10 @@ const ChatBox = ({ userProfile, activeCourseID, messageCache }) => {
 
   useEffect(() => {
     const loadMessages = async () => {
-      let cacheMessage = messageCache.get(activeCourseID)
-      console.log(cacheMessage)
-      if (true) {
-        console.log("No Cache")
-        setIsLoading(true)
-        try {
+      setIsLoading(true)
+      try {
+        if (chatType === "course") {
+          // Load course chat messages
           const { data: messagesData, error } = await supabase
             .from("chat_messages")
             .select(
@@ -36,12 +40,14 @@ const ChatBox = ({ userProfile, activeCourseID, messageCache }) => {
           chat_channels!inner (
             courseOfferedId
           )
-        `
+        `,
             )
             .eq("chat_channels.courseOfferedId", activeCourseID)
             .order("createdAt", { ascending: true })
             .limit(50)
+
           if (error) throw error
+
           const formattedMessages = messagesData.map((msg) => ({
             id: msg.id,
             sender: msg.user.name,
@@ -51,30 +57,27 @@ const ChatBox = ({ userProfile, activeCourseID, messageCache }) => {
           }))
 
           setMessages(formattedMessages)
-          messageCache.set(activeCourseID, formattedMessages)
-        } catch (error) {
-          throw error
-        } finally {
-          setIsLoading(false)
-          console.log(messageCache)
+        } else {
+          // Load group chat messages
+          const response = await axios.get(
+            `/api/group-chat/messages?groupId=${activeCourseID}`,
+          )
+          setMessages(response.data)
         }
-      } else {
-        console.log("Getting Cached Message")
-        setMessages(messageCache.get(activeCourseID))
+      } catch (error) {
+        console.error("Error loading messages:", error)
+        setMessages([])
+      } finally {
         setIsLoading(false)
       }
     }
-    console.log("loadings")
+
     loadMessages()
-  }, [activeCourseID])
+  }, [activeCourseID, chatType])
 
   const ws = usePartySocket({
-    // usePartySocket takes the same arguments as PartySocket.
-    host: "https://moodly-party.himel2010.partykit.dev/", // or localhost:1999 in dev
+    host: "http://localhost:1999",
     room: activeCourseID,
-
-    // in addition, you can provide socket lifecycle event handlers
-    // (equivalent to using ws.addEventListener in an effect hook)
     onOpen() {
       console.log("connected")
     },
@@ -94,11 +97,9 @@ const ChatBox = ({ userProfile, activeCourseID, messageCache }) => {
       console.log("error")
     },
   })
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-    // if (messages.length > 0) {
-    //   messageCache.set(activeCourseID, messages)
-    // }
   }, [messages])
 
   const newMessage = (newmessage) => {

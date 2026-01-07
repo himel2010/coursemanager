@@ -17,7 +17,18 @@ const messageCache = new Map()
 
 export default function Page() {
   const { userProfile, courses } = useAuth()
-  const [isActive, setIsActive] = useState(0)
+  const [activeChatId, setActiveChatId] = useState(null)
+  const [chatType, setChatType] = useState("course")
+  const [displayName, setDisplayName] = useState("")
+
+  // Initialize with first course
+  useState(() => {
+    if (courses?.length > 0 && !activeChatId) {
+      setActiveChatId(courses[0].id)
+      setDisplayName(courses[0].course.code)
+      setChatType("course")
+    }
+  }, [courses])
 
   return (
     <SidebarProvider
@@ -25,7 +36,12 @@ export default function Page() {
         "--sidebar-width": "450px",
       }}
     >
-      <AppSidebar courses={courses} setIsActive={setIsActive} />
+      <AppSidebar
+        courses={courses}
+        setActiveChatId={setActiveChatId}
+        setChatType={setChatType}
+        setDisplayName={setDisplayName}
+      />
       <SidebarInset className="h-screen overflow-hidden">
         <header className="bg-background sticky top-0 flex flex-row shrink-0 items-center justify-between gap-2 border-b p-4">
           <span className="flex flex-row items-center">
@@ -34,8 +50,7 @@ export default function Page() {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-
-            {courses?.length > 0 && courses[isActive]?.course.code}
+            {displayName}
           </span>
           <span className="flex justify-center items-center gap-2">
             <Button
@@ -53,11 +68,12 @@ export default function Page() {
         </header>
         {/* Content */}
         <div className="flex-1 w-full p-5 min-h-0">
-          {courses?.length > 0 && (
+          {activeChatId && (
             <ChatBox
               userProfile={userProfile}
-              activeCourseID={courses[isActive]?.id}
+              activeCourseID={activeChatId}
               messageCache={messageCache}
+              chatType={chatType}
             />
           )}
         </div>

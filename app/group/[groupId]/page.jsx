@@ -7,13 +7,13 @@ import axios from "axios"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Users, ArrowLeft } from "lucide-react"
+import { Users, ArrowLeft, MessageCircle } from "lucide-react"
 import { useAuth } from "@/lib/auth/AuthContext"
 
 /**
  * Group Page Component
  * Displays group information and members
- * Placeholder for future BlockNote editor integration
+ * Includes link to group chat
  *
  * Optimization:
  * 1. Single API call to fetch all group data
@@ -69,6 +69,14 @@ export default function GroupPage() {
         <Button variant="ghost" onClick={() => router.back()} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
           Back
+        </Button>
+        <Button
+          variant="default"
+          onClick={() => router.push("/course/chat")}
+          className="gap-2"
+        >
+          <MessageCircle className="h-4 w-4" />
+          Open Group Chat
         </Button>
       </div>
 
@@ -139,9 +147,7 @@ export default function GroupPage() {
       {/* Placeholder for future features */}
       <Card className="p-6 text-center text-muted-foreground">
         <p>Group collaboration features coming soon...</p>
-        <p className="text-sm mt-2">
-          (BlockNote editor, file sharing, chat, etc.)
-        </p>
+        <p className="text-sm mt-2">(BlockNote editor, file sharing, etc.)</p>
       </Card>
     </div>
   )

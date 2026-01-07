@@ -14,7 +14,7 @@ import { isGroupsEnabled } from "@/lib/events/propertyDefinitions"
 /**
  * GroupProperty Component
  *
- * Displays group status and allows group creation/viewing
+ * Displays eventGroup status and allows eventGroup creation/viewing
  * Now integrated as a property renderer component
  *
  * Optimization:
@@ -73,7 +73,7 @@ const GroupProperty = ({ propertyKey, value, event, pageProperties }) => {
         setPendingInvites(response.data.pendingInvites || [])
       }
     } catch (error) {
-      console.error("Error fetching group status:", error)
+      console.error("Error fetching eventGroup status:", error)
     } finally {
       setLoading(false)
     }
@@ -88,7 +88,7 @@ const GroupProperty = ({ propertyKey, value, event, pageProperties }) => {
   const handleGroupCreated = () => {
     setShowCreateDialog(false)
     setHasSentRequest(true)
-    fetchGroupStatus() // Refresh group status
+    fetchGroupStatus() // Refresh eventGroup status
   }
 
   // Don't render if groups not enabled
@@ -204,11 +204,11 @@ function PendingInviteCard({ invite, onRespond }) {
   return (
     <div className="flex items-center justify-between p-2 bg-background rounded border">
       <div className="text-sm">
-        <div className="font-medium">{invite.group.name}</div>
+        <div className="font-medium">{invite.eventGroup.name}</div>
         <div className="text-xs text-muted-foreground">
-          From: {invite.group.creator.name} ({invite.group.members.length}{" "}
-          member
-          {invite.group.members.length !== 1 ? "s" : ""})
+          From: {invite.eventGroup.creator.name} (
+          {invite.eventGroup.members.length} member
+          {invite.eventGroup.members.length !== 1 ? "s" : ""})
         </div>
       </div>
       <div className="flex gap-2">

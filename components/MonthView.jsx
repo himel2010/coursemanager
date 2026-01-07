@@ -69,7 +69,7 @@ const MonthBox = ({
     day.format("M") === (new Date().getMonth() + 1).toString()
 
   const filtered_events = events?.filter(
-    (e) => e?.date?.format("DD-MM-YYYY") === day.format("DD-MM-YYYY")
+    (e) => e?.date?.format("DD-MM-YYYY") === day.format("DD-MM-YYYY"),
   )
   const classes = events?.find((e) => e.id == "class")
   const filter = useCalendarStore((state) => state.filter)
@@ -86,8 +86,8 @@ const MonthBox = ({
                       dayIdx === 0
                         ? "rounded-l-none"
                         : dayIdx === week.length - 1
-                        ? "rounded-r-none"
-                        : ""
+                          ? "rounded-r-none"
+                          : ""
                     }
                     ${isToday ? "border-2 border-primary" : ""}
                     ${
@@ -125,7 +125,7 @@ const MonthBox = ({
           const isFiltered = filter?.includes("CLASS")
           return (
             <div key={i}>
-              {!isFiltered && (
+              {!isFiltered && dayjs(day).isBefore(dayjs("2026-01-09")) && (
                 <CalendarEvent event={e} day={day} type="class" />
               )}
             </div>

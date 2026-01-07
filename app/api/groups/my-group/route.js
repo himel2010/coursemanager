@@ -4,16 +4,6 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
-/**
- * GET /api/groups/my-group?eventId=xxx
- * Fetches the user's group for a specific event (if exists)
- * Also returns pending invites if no group
- *
- * Optimization:
- * 1. Single query to check both creator and member status
- * 2. Conditional fetch - only get invites if no group
- * 3. Selective field inclusion to reduce payload
- */
 export async function GET(request) {
   try {
     const supabase = await createClient()
@@ -91,10 +81,10 @@ export async function GET(request) {
       where: {
         inviteeId: data.user.id,
         status: "PENDING",
-        group: { eventId },
+        eventGroup: { eventId },
       },
       include: {
-        group: {
+        eventGroup: {
           include: {
             creator: {
               select: {

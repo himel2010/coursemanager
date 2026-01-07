@@ -60,7 +60,6 @@ export async function POST(request) {
     }
 
     // Fetch event details and existing groups count in parallel
-    // Optimization: Only fetch needed fields
     const [event, existingGroupsCount] = await Promise.all([
       prisma.calendarEvent.findUnique({
         where: { id: eventId },
@@ -95,7 +94,6 @@ export async function POST(request) {
     )
 
     // Create group with transaction for atomicity
-    // Optimization: Single database round-trip for all operations
     const result = await prisma.$transaction(async (tx) => {
       // Create empty page for group
       const page = await tx.page.create({
@@ -158,6 +156,13 @@ export async function POST(request) {
               },
             },
           },
+        },
+      })
+
+      // Create group chat channel
+      await tx.groupChatChannel.create({
+        data: {
+          groupId: group.id,
         },
       })
 

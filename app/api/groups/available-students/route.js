@@ -4,16 +4,6 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
-/**
- * GET /api/groups/available-students?eventId=xxx
- * Fetches students enrolled in the course who are NOT in a group for this event
- *
- * Optimization strategy:
- * 1. Single complex query instead of multiple round-trips
- * 2. Use NOT EXISTS subquery for efficiency
- * 3. Only select necessary fields to minimize payload
- * 4. Index-optimized WHERE clause
- */
 export async function GET(request) {
   try {
     const supabase = await createClient()
@@ -59,7 +49,7 @@ export async function GET(request) {
           {
             eventGroupMemberships: {
               none: {
-                group: {
+                eventGroup: {
                   eventId: eventId,
                 },
               },

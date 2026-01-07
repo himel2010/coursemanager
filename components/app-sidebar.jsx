@@ -1,7 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { ArchiveX, Command, File, Inbox, Send, Trash2 } from "lucide-react"
+import {
+  ArchiveX,
+  Command,
+  File,
+  Inbox,
+  Send,
+  Trash2,
+  Users,
+} from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
 import { Label } from "@/components/ui/label"
@@ -22,6 +30,8 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
+import { Separator } from "./ui/separator"
+import axios from "axios"
 
 // This is sample data
 const data = {
@@ -148,19 +158,43 @@ const data = {
 
 export function AppSidebar({
   courses,
-  setIsActive,
-  handleCourseChange,
+  setActiveChatId,
+  setChatType,
+  setDisplayName,
   ...props
 }) {
-  // Note: I'm using state to show active item.
-  // IRL you should use the url/router.
-
   const [activeItem, setActiveItem] = React.useState(data.navMain[0])
   const [mails, setMails] = React.useState(data.mails)
+  const [userGroups, setUserGroups] = React.useState([])
+  const [loadingGroups, setLoadingGroups] = React.useState(true)
   const { setOpen } = useSidebar()
 
-  const handleactive = (idx, id) => {
-    setIsActive(idx)
+  React.useEffect(() => {
+    const fetchUserGroups = async () => {
+      try {
+        setLoadingGroups(true)
+        const response = await axios.get("/api/groups/user-groups")
+        setUserGroups(response.data.groups || [])
+      } catch (error) {
+        console.error("Error fetching user groups:", error)
+      } finally {
+        setLoadingGroups(false)
+      }
+    }
+
+    fetchUserGroups()
+  }, [])
+
+  const handleCourseClick = (course, idx) => {
+    setActiveChatId(course.id)
+    setChatType("course")
+    setDisplayName(course.course.code)
+  }
+
+  const handleGroupClick = (group) => {
+    setActiveChatId(group.id)
+    setChatType("group")
+    setDisplayName(group.name)
   }
 
   return (
@@ -170,8 +204,6 @@ export function AppSidebar({
       {...props}
     >
       {/* This is the first sidebar */}
-      {/* We disable collapsible and adjust width to icon. */}
-      {/* This will make the sidebar appear as icons. */}
       <Sidebar
         collapsible="none"
         className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
@@ -207,13 +239,13 @@ export function AppSidebar({
                       onClick={() => {
                         setActiveItem(item)
                         const course = data.mails.sort(
-                          () => Math.random() - 0.5
+                          () => Math.random() - 0.5,
                         )
                         setMails(
                           course.slice(
                             0,
-                            Math.max(5, Math.floor(Math.random() * 10) + 1)
-                          )
+                            Math.max(5, Math.floor(Math.random() * 10) + 1),
+                          ),
                         )
                         setOpen(true)
                       }}
@@ -233,8 +265,8 @@ export function AppSidebar({
           <NavUser user={data.user} />
         </SidebarFooter>
       </Sidebar>
+
       {/* This is the second sidebar */}
-      {/* We disable collapsible and let it fill remaining space */}
       <Sidebar collapsible="none" className="hidden flex-1 md:flex">
         <SidebarHeader className="gap-3.5 border-b p-4">
           <div className="flex w-full items-center justify-between">
@@ -249,7 +281,13 @@ export function AppSidebar({
           <SidebarInput placeholder="Type to search..." />
         </SidebarHeader>
         <SidebarContent>
+          {/* Courses Section */}
           <SidebarGroup className="px-0">
+            <div className="px-4 py-2">
+              <span className="text-xs font-semibold text-muted-foreground">
+                COURSES
+              </span>
+            </div>
             <SidebarGroupContent>
               {courses?.map((c, idx) => {
                 const id = c.id
@@ -258,7 +296,7 @@ export function AppSidebar({
 
                 return (
                   <div
-                    onClick={() => handleactive(idx, id)}
+                    onClick={() => handleCourseClick(c, idx)}
                     key={id}
                     className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:cursor-pointer flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
                   >
@@ -276,6 +314,48 @@ export function AppSidebar({
                   </div>
                 )
               })}
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <Separator />
+
+          {/* Group Chats Section */}
+          <SidebarGroup className="px-0">
+            <div className="px-4 py-2">
+              <span className="text-xs font-semibold text-muted-foreground">
+                GROUP CHATS
+              </span>
+            </div>
+            <SidebarGroupContent>
+              {loadingGroups ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  Loading groups...
+                </div>
+              ) : userGroups.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  No groups yet
+                </div>
+              ) : (
+                userGroups.map((group) => (
+                  <div
+                    onClick={() => handleGroupClick(group)}
+                    key={group.id}
+                    className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:cursor-pointer flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
+                  >
+                    <div className="flex w-full items-center gap-2">
+                      <Users className="h-4 w-4 shrink-0" />
+                      <span className="font-bold truncate">{group.name}</span>
+                      <span className="ml-auto text-xs">
+                        {group.members.length} members
+                      </span>
+                    </div>
+                    <span className="font-medium text-xs text-muted-foreground">
+                      {group.calendarEvent.eventType} •{" "}
+                      {group.courseOffered.course.code}
+                    </span>
+                  </div>
+                ))
+              )}
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
