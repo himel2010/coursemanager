@@ -9,6 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const QuickDisplay = ({ faculty, users, courses }) => {
@@ -63,26 +70,70 @@ function CourseDisplay({ courses }) {
 }
 
 function FacultyDisplay({ faculty }) {
+  const [open, setOpen] = useState(false)
+  const [selected, setSelected] = useState(null)
+
   return (
-    <Table>
-      <TableCaption>A list of faculties.</TableCaption>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Initial</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Mail</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {faculty.map((fac) => (
-          <TableRow key={fac.initial}>
-            <TableCell className="font-medium">{fac.initial}</TableCell>
-            <TableCell>{fac.name}</TableCell>
-            <TableCell>{fac.email}</TableCell>
+    <>
+      <Table>
+        <TableCaption>A list of faculties.</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Initial</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Mail</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {faculty.map((fac) => (
+            <TableRow key={fac.initial}>
+              <TableCell className="font-medium">{fac.initial}</TableCell>
+              <TableCell>{fac.name}</TableCell>
+              <TableCell>{fac.email}</TableCell>
+              <TableCell>
+                <button
+                  onClick={() => {
+                    setSelected(fac)
+                    setOpen(true)
+                  }}
+                  className="text-sm text-blue-600 underline"
+                >
+                  Preview
+                </button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selected?.name ?? selected?.initial}</DialogTitle>
+            <DialogDescription>Faculty details</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 mt-2">
+            <p>
+              <strong>Initial:</strong> {selected?.initial}
+            </p>
+            <p>
+              <strong>Name:</strong> {selected?.name}
+            </p>
+            <p>
+              <strong>Email:</strong> {selected?.email}
+            </p>
+            <p>
+              <strong>Designation:</strong> {selected?.designation}
+            </p>
+            <p>
+              <strong>Room:</strong> {selected?.room}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

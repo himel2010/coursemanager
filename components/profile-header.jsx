@@ -1,3 +1,6 @@
+"use client"
+
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -7,6 +10,7 @@ import { useState } from "react"
 import { ThemeChange } from "./ThemeChange"
 
 export default function ProfileHeader({ userProfile }) {
+  const router = useRouter()
   const getInitials = () => {
     return userProfile?.name
       ?.split(" ")
@@ -58,7 +62,7 @@ export default function ProfileHeader({ userProfile }) {
               </div>
             </div>
           </div>
-          <Button onClick={() => console.log(userProfile)}>Edit Profile</Button>
+          <Button onClick={() => router.push("/signup")}>Edit Profile</Button>
         </div>
       </CardContent>
     </Card>

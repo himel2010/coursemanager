@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/command"
 import axios from "axios"
 import { redirect } from "next/navigation"
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Check, X } from "lucide-react"
 import {
   Table,
@@ -51,7 +51,37 @@ export default function SignUpComponent({ courseInfo }) {
   const [name, setName] = useState("")
   const [id, setId] = useState("")
   const [dept, setDept] = useState("CSE")
+  const [accountType, setAccountType] = useState("student")
+  const [email, setEmail] = useState("")
   const [search, setSearch] = useState("")
+
+  // Auto-detect faculty by email domain and lookup
+  useEffect(() => {
+    let mounted = true
+    const check = async () => {
+      const v = (email || "").trim().toLowerCase()
+      if (!v) return
+      if (!v.endsWith("@bracu.ac.bd")) return
+      try {
+        const res = await fetch(`/api/faculty/find?email=${encodeURIComponent(v)}`)
+        const json = await res.json()
+        if (!mounted) return
+        if (json.found) {
+          setAccountType("faculty")
+          if (json.name) setName(json.name)
+          toast.success("Detected BRACU email — switched to Faculty and autofilled name")
+        }
+      } catch (err) {
+        // ignore lookup errors silently
+      }
+    }
+    // debounce short delay
+    const t = setTimeout(check, 400)
+    return () => {
+      mounted = false
+      clearTimeout(t)
+    }
+  }, [email])
 
   const ref = useRef(null)
   const addCourse = () => {
@@ -99,7 +129,7 @@ export default function SignUpComponent({ courseInfo }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (courses.length < 3) {
+    if (accountType === "student" && courses.length < 3) {
       toast.error("You must take at least 3 courses")
       return
     }
@@ -107,6 +137,8 @@ export default function SignUpComponent({ courseInfo }) {
       name: name,
       id: id,
       dept: dept,
+      accountType: accountType,
+      email: email,
       sem: semester,
       course: courses,
     }
@@ -127,6 +159,50 @@ export default function SignUpComponent({ courseInfo }) {
           <FieldSeparator />
 
           <FieldGroup>
+            {/* Account Type */}
+            <Field orientation="responsive">
+              <FieldContent>
+                <FieldLabel htmlFor="account">Account Type</FieldLabel>
+              </FieldContent>
+              <Select value={accountType} onValueChange={(v) => setAccountType(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose account type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="faculty">Faculty</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            {/* Email (always shown). If BRACU email, auto-detects faculty. */}
+            <Field orientation="responsive">
+              <FieldContent>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+              </FieldContent>
+              <Input
+                id="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={async () => {
+                  const v = (email || "").trim()
+                  if (!v) return
+                  try {
+                    const res = await fetch(`/api/faculty/find?email=${encodeURIComponent(v)}`)
+                    const json = await res.json()
+                    if (json.found) {
+                      setAccountType("faculty")
+                      setName(json.name || "")
+                      toast.success("Faculty found — name auto-filled")
+                    }
+                  } catch (err) {
+                    // ignore
+                  }
+                }}
+              />
+            </Field>
+
             {/* Name Field */}
             <Field orientation="responsive">
               <FieldContent>
@@ -142,18 +218,20 @@ export default function SignUpComponent({ courseInfo }) {
             </Field>
 
             {/* Student ID Field */}
-            <Field orientation="responsive">
-              <FieldContent>
-                <FieldLabel htmlFor="sid">Student ID</FieldLabel>
-              </FieldContent>
-              <Input
-                id="sid"
-                placeholder="111"
-                required
-                value={id}
-                onChange={(e) => setId(e.target.value)}
-              />
-            </Field>
+            {accountType === "student" && (
+              <Field orientation="responsive">
+                <FieldContent>
+                  <FieldLabel htmlFor="sid">Student ID</FieldLabel>
+                </FieldContent>
+                <Input
+                  id="sid"
+                  placeholder="111"
+                  required
+                  value={id}
+                  onChange={(e) => setId(e.target.value)}
+                />
+              </Field>
+            )}
 
             {/* Department Field */}
             <Field orientation="responsive">
