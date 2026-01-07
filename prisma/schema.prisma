@@ -19,6 +19,7 @@ model User {
   isFinalYear           Boolean?             @default(false)
   createdAt             DateTime             @default(now())
   updatedAt             DateTime?            @updatedAt
+  isAdmin               Boolean?             @default(false)
   calendarEvents        CalendarEvent[]
   chatMessages          ChatMessage[]
   enrollments           Enrollment[]

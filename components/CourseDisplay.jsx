@@ -67,7 +67,7 @@ export function CourseDisplay({ courses }) {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      redirect(`/course/chat`)
+                      redirect(`/course/${id}`)
                     }}
                   >
                     Open
