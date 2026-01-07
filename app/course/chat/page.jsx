@@ -55,7 +55,7 @@ export default function Page() {
           <span className="flex justify-center items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => redirect("/user-dashboard")}
+              onClick={() => redirect("/user/dashboard")}
             >
               Return to Dashboard
             </Button>
