@@ -133,7 +133,7 @@ const UpcomingDayBox = ({ events, day, today, setSelectedDate }) => {
           const isFiltered = filter?.includes("CLASS")
           return (
             <div key={`class-${i}`}>
-              {!isFiltered && (
+              {!isFiltered && dayjs(day).isBefore(dayjs("2026-01-09")) && (
                 <CalendarEvent event={e} day={day} type="class" />
               )}
             </div>

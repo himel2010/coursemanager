@@ -3,21 +3,6 @@
 
 import { propertyDefinitions } from "@/lib/events/propertyDefinitions"
 
-/**
- * PagePropertyComponent - Dynamic Property Renderer
- *
- * Optimization:
- * 1. Dynamic component rendering based on property definitions
- * 2. No hardcoded logic - fully driven by propertyDefinitions
- * 3. Each property type has its own isolated component
- * 4. Only renders properties that exist in pageProperties
- *
- * Architecture:
- * - Iterates through pageProperties
- * - Looks up definition in propertyDefinitions
- * - Renders the appropriate component from definition.renderComponent
- * - Passes all necessary props to child component
- */
 const PagePropertyComponent = ({ pageProperties, event }) => {
   if (!pageProperties || Object.keys(pageProperties).length === 0) {
     return null

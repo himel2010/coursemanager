@@ -25,7 +25,7 @@ const CalendarEvent = ({ event, type }) => {
           <div className="flex items-center gap-0.5 flex-1 min-w-0">
             {event?.includeTime && (
               <span className="font-extralight text-[0.55rem] whitespace-nowrap">
-                {event?.date?.format("h A")}
+                {event?.date?.format("h:mm A")}
               </span>
             )}
             <span className="font-semibold text-[0.65rem] truncate">

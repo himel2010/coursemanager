@@ -146,7 +146,7 @@ const AllDayBox = ({ events, day, today }) => {
           const isFiltered = filter?.includes("CLASS")
           return (
             <div key={i}>
-              {!isFiltered && (
+              {!isFiltered && dayjs(day).isBefore(dayjs("2026-01-09")) && (
                 <CalendarEvent event={e} day={day} type="class" />
               )}
             </div>

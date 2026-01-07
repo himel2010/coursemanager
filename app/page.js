@@ -5,7 +5,7 @@ import CommunitySection from "@/components/shadcn-studio/blocks/community-sectio
 const navigationData = [
   {
     title: "Dashboard",
-    href: "/user-dashboard",
+    href: "/user",
   },
   {
     title: "Thesis Groups",

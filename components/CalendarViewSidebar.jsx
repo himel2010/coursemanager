@@ -6,17 +6,26 @@ import AddEventForm from "./events/AddEventForm"
 import EventFilter from "./EventFilter"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-const CalendarViewSidebar = ({ calendar }) => {
+const CalendarViewSidebar = ({ calendar, userProfile }) => {
   return (
     <Card className="h-screen w-full bg-muted rounded-none px-5 shadow-none border-l">
-      <Tabs defaultValue="add" className="w-[400px]">
+      <Tabs
+        defaultValue={`${userProfile?.isAdmin ? "add" : "filter"}`}
+        className="w-[400px]"
+      >
         <TabsList>
-          <TabsTrigger value="add">Add Event</TabsTrigger>
+          {userProfile?.isAdmin && (
+            <TabsTrigger value="add">Add Event</TabsTrigger>
+          )}
+
           <TabsTrigger value="filter">Filter</TabsTrigger>
         </TabsList>
-        <TabsContent value="add">
-          <AddEventForm calendar={calendar} />
-        </TabsContent>
+        {userProfile?.isAdmin && (
+          <TabsContent value="add">
+            <AddEventForm calendar={calendar} />
+          </TabsContent>
+        )}
+
         <TabsContent value="filter">
           <EventFilter />
         </TabsContent>

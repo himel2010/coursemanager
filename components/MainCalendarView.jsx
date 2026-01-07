@@ -23,7 +23,7 @@ const MainCalendarView = ({ upcoming }) => {
   const events = useCalendarStore((state) => state.events)
   const setEvents = useCalendarStore((state) => state.setEvents)
   const currentView = useCalendarStore((state) => state.currentView)
-  const { user, courses } = useAuth()
+  const { userProfile, courses } = useAuth()
 
   const calendar = useCalendarStore()
 
@@ -107,7 +107,7 @@ const MainCalendarView = ({ upcoming }) => {
       </div>
       {!upcoming && (
         <ScrollArea className="h-full w-full max-w-md">
-          <CalendarViewSidebar calendar={calendar} />
+          <CalendarViewSidebar calendar={calendar} userProfile={userProfile} />
         </ScrollArea>
       )}
     </div>

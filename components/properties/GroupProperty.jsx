@@ -11,24 +11,6 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth/AuthContext"
 import { isGroupsEnabled } from "@/lib/events/propertyDefinitions"
 
-/**
- * GroupProperty Component
- *
- * Displays eventGroup status and allows eventGroup creation/viewing
- * Now integrated as a property renderer component
- *
- * Optimization:
- * 1. Lazy data fetching - only when component mounts
- * 2. Cached API responses in state to prevent re-fetching
- * 3. Conditional rendering to minimize DOM updates
- *
- * Props:
- * - propertyKey: "Groups"
- * - value: "True" | "False"
- * - event: CalendarEvent object
- * - pageProperties: Object with event properties
- * - definition: Property definition from propertyDefinitions
- */
 const GroupProperty = ({ propertyKey, value, event, pageProperties }) => {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)

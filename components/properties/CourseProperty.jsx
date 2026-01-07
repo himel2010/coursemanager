@@ -20,7 +20,7 @@ const CourseProperty = ({ propertyKey, value, event }) => {
 
   const handleClick = () => {
     if (event?.courseOffered?.id) {
-      router.push(`/course/${event.courseOffered.id}`)
+      router.push(`user/course/${event.courseOffered.id}`)
     }
   }
 

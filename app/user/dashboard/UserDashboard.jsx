@@ -28,22 +28,11 @@ const UserDashboard = () => {
   return (
     <div className="w-full h-full p-5 flex flex-col justify gap-5">
       <ProfileHeader userProfile={userProfile} />
-      <div className="flex gap-2">
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => redirect("/course/chat")}
-        >
-          Go to Chat
-        </Button>
-        <Button variant="default" size="sm" onClick={() => redirect("/notes")}>
-          📝 Notes
-        </Button>
-      </div>
+      <div className="flex gap-2"></div>
       <MainCalendarView upcoming={true} />
       <QuizAnalytics />
 
-      <CourseDisplay courses={courses} />
+      {/* <CourseDisplay courses={courses} /> */}
     </div>
   )
 }

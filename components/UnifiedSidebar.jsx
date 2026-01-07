@@ -19,6 +19,7 @@ import {
   User,
   MessageSquare,
   BookOpen,
+  Home,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 
@@ -26,6 +27,11 @@ export function UnifiedSidebar({ courses }) {
   const pathname = usePathname()
 
   const mainNavItems = [
+    {
+      title: "Home",
+      href: "/",
+      icon: Home,
+    },
     {
       title: "Dashboard",
       href: "/user/dashboard",
@@ -57,7 +63,7 @@ export function UnifiedSidebar({ courses }) {
     <Sidebar>
       <SidebarHeader>
         <div className="px-4 py-2">
-          <h2 className="text-lg font-semibold">Course Manager</h2>
+          <h2 className="text-lg font-semibold">UniConnet</h2>
         </div>
       </SidebarHeader>
       <SidebarContent>

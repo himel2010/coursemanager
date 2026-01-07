@@ -10,10 +10,7 @@ export async function GET(request, { params }) {
     const currentUserId = authData.data?.user?.id
 
     if (!currentUserId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { id } = await params
@@ -21,16 +18,13 @@ export async function GET(request, { params }) {
     if (!id) {
       return NextResponse.json(
         { error: "User ID is required" },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     // Only allow fetching own profile
     if (id !== currentUserId) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     // First, get the basic user info
@@ -109,6 +103,7 @@ export async function GET(request, { params }) {
       isFinalYear: user.isFinalYear,
       department,
       enrollments,
+      isAdmin: user.isAdmin,
     }
 
     return NextResponse.json(result)
@@ -120,7 +115,7 @@ export async function GET(request, { params }) {
         details: error.message || "Unknown error",
         stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

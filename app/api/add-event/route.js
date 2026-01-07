@@ -25,7 +25,7 @@ export async function POST(request) {
       startedAt,
       userId,
       eventInfo,
-      includeTime
+      includeTime,
     )
     const formattedResponse = formatResponse(response)
 
@@ -37,7 +37,11 @@ export async function POST(request) {
       console.log("API a quiz time", startedAt)
       const response = await prisma.page.create({
         data: {
-          content: { type: eventType.toUpperCase(), pageContent: page },
+          content: {
+            type: eventType.toUpperCase(),
+            pageContent: page,
+            pageProperties: eventInfo.quiz.quizInfo.pageProperties,
+          },
           isPublished: true,
           userId,
           calendarEvent: {
@@ -123,7 +127,7 @@ async function storeAssignment(
   startedAt,
   userId,
   eventInfo,
-  includeTime
+  includeTime,
 ) {
   try {
     console.log("API a time", startedAt)
@@ -145,7 +149,10 @@ async function storeAssignment(
             startTime: startedAt,
             includeTime: includeTime,
             eventType: eventType.toUpperCase(),
-            group: eventInfo.assignmentInfo.pageProperties.Groups === "True" ? true : false,
+            group:
+              eventInfo.assignmentInfo.pageProperties.Groups === "True"
+                ? true
+                : false,
           },
         },
       },

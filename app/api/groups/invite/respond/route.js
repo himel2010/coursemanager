@@ -4,15 +4,6 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
-/**
- * POST /api/groups/invite/respond
- * Accept or reject a group invite
- *
- * Optimization:
- * 1. Transaction ensures atomic operations
- * 2. Batch update to reject other invites for same event
- * 3. Single query to check existing membership
- */
 export async function POST(request) {
   try {
     const supabase = await createClient()

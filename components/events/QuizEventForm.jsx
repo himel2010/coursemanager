@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import {
   Field,
   FieldLabel,
@@ -18,6 +18,8 @@ import { TagsInputField } from "@/components/tags-input-field"
 import { useForm, FormProvider } from "react-hook-form"
 import { Input } from "../ui/input"
 import { Minus, Plus } from "lucide-react"
+import { Button } from "../ui/button"
+import { useCalendarStore } from "@/lib/store"
 
 const QuizEventForm = ({
   course,
@@ -28,14 +30,38 @@ const QuizEventForm = ({
   form,
   rubric,
   setRubric,
+  setQuizInfo,
+  quizInfo,
+  date,
 }) => {
+  const { selectedDate } = useCalendarStore()
+  const [pageProperties, setPageProperties] = useState({
+    Course: courses?.find((c) => c.id == course)?.course?.code,
+    Date: date.format("DD/MM"),
+  })
+
+  useEffect(() => {
+    setPageProperties({
+      ...pageProperties,
+      Course: courses?.find((c) => c.id == course)?.course?.code,
+    })
+    const newQuiz = {
+      ...quizInfo,
+      pageProperties: {
+        Course: courses?.find((c) => c.id == course)?.course?.code,
+        Date: selectedDate.format("DD/MM"),
+      },
+    }
+    setQuizInfo(newQuiz)
+  }, [course])
+
   const updateRubricItem = (id, field, value) => {
     setRubric((prev) => ({
       ...prev,
       items: prev.items.map((item) =>
         item.id === id
           ? { ...item, [field]: field === "mark" ? Number(value) : value }
-          : item
+          : item,
       ),
     }))
   }
@@ -76,7 +102,7 @@ const QuizEventForm = ({
   }
   return (
     <FieldSet>
-      <Field>
+      {/* <Field>
         <FieldLabel htmlFor="username">Description</FieldLabel>
         <Input
           id="username"
@@ -86,7 +112,9 @@ const QuizEventForm = ({
           onChange={(e) => setDescription(e.target.value)}
           required
         />
-      </Field>
+      </Field> */}
+      {/* <Button onClick={() => console.log(quizInfo)}> asd </Button> */}
+
       <Field>
         <FieldLabel htmlFor="syllabus">Syllabus</FieldLabel>
         <FormProvider
@@ -153,7 +181,7 @@ const QuizEventForm = ({
         {/* Validation message */}
         {Math.abs(
           rubric.items.reduce((sum, item) => sum + item.mark, 0) -
-            rubric.totalMarks
+            rubric.totalMarks,
         ) > 0.01 && (
           <p className="text-sm text-destructive mt-2">
             Warning: Items don't sum to total mark

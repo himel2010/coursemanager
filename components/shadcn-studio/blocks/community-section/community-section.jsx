@@ -39,38 +39,6 @@ export default function CommunitySection() {
             </CardContent>
           </Card>
 
-          {/* Faculty Email */}
-          <Card className="flex flex-col h-full hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="text-4xl mb-4">✉️</div>
-              <CardTitle>Faculty Communication</CardTitle>
-              <CardDescription>Connect with instructors</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              <p className="text-sm text-muted-foreground mb-6">
-                Send emails directly to your faculty members from within the
-                app.
-              </p>
-              <Button asChild variant="default" className="w-full">
-                <a href="/community/faculty-email">Send Email →</a>
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Group Projects */}
-          <Card className="flex flex-col h-full hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="text-4xl mb-4"></div>
-              <CardTitle>Group Projects</CardTitle>
-              <CardDescription></CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              <p className="text-sm text-muted-foreground mb-6"></p>
-              <Button asChild variant="default" className="w-full">
-                <a href="/community/group-projects">Link →</a>
-              </Button>
-            </CardContent>
-          </Card>
           <Card className="flex flex-col h-full hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="text-4xl mb-4">🆘</div>
@@ -82,7 +50,7 @@ export default function CommunitySection() {
             <CardContent className="flex-1 flex flex-col justify-between">
               <p className="text-sm text-muted-foreground mb-6"></p>
               <Button asChild variant="default" className="w-full">
-                <a href="/community/help">Help →</a>
+                <a href="/user/help">Help →</a>
               </Button>
             </CardContent>
           </Card>

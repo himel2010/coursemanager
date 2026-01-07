@@ -79,6 +79,11 @@ const AddEventForm = ({ calendar }) => {
     pageContent: pageContent,
     pageProperties: {},
   })
+  const [quizInfo, setQuizInfo] = useState({
+    title: "Quiz",
+    pageContent: pageContent,
+    pageProperties: {},
+  })
 
   const selectedDate = useCalendarStore((state) => state.selectedDate)
   const setSelectedDate = useCalendarStore((state) => state.setSelectedDate)
@@ -120,6 +125,7 @@ const AddEventForm = ({ calendar }) => {
             quiz: {
               syllabus: form?.getValues("tags"),
               rubric: rubric,
+              quizInfo,
             },
             assignmentInfo,
           },
@@ -190,6 +196,9 @@ const AddEventForm = ({ calendar }) => {
               form={form}
               rubric={rubric}
               setRubric={setRubric}
+              setQuizInfo={setQuizInfo}
+              quizInfo={quizInfo}
+              date={dayjs(selectedDate)}
             />
           </TabsContent>
           <TabsContent value="ASSIGNMENT">
